@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini Search Engine - PageRank Visualization</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <!-- Cytoscape.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Controls -->
+        <aside class="sidebar">
+            <header>
+                <h1>PageRank Explorer</h1>
+                <p>Simulate how search engines rank pages.</p>
+            </header>
+
+            <section class="control-card">
+                <h2>Crawl Real Website</h2>
+                <div class="input-group flex-col">
+                    <input type="url" id="crawl-url" placeholder="https://example.com">
+                    <div class="flex-row">
+                        <input type="number" id="crawl-limit" min="1" max="30" value="12" title="Maximum pages to crawl">
+                        <button id="crawl-btn" class="btn btn-accent">Find Connections</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="control-card">
+                <h2>1. Add Webpages (Nodes)</h2>
+                <div class="input-group">
+                    <input type="text" id="node-name" placeholder="Page Name (e.g., A)" maxlength="10">
+                    <button id="add-node-btn" class="btn btn-primary">Add Node</button>
+                </div>
+            </section>
+
+            <section class="control-card">
+                <h2>2. Add Links (Directed Edges)</h2>
+                <div class="input-group flex-col">
+                    <div class="flex-row">
+                        <input type="text" id="link-source" placeholder="Source (A)" maxlength="10">
+                        <span class="arrow-icon">→</span>
+                        <input type="text" id="link-target" placeholder="Target (B)" maxlength="10">
+                    </div>
+                    <button id="add-link-btn" class="btn btn-primary mt-2">Add Link</button>
+                </div>
+            </section>
+
+            <section class="control-card actions">
+                <button id="load-sample-btn" class="btn btn-secondary">Load Sample Graph</button>
+                <button id="clear-btn" class="btn btn-danger">Clear All</button>
+                <button id="calculate-btn" class="btn btn-accent pulse">Calculate PageRank</button>
+            </section>
+
+            <section class="results-card hidden" id="results-section">
+                <h2>Ranking Results</h2>
+                <div id="loading" class="hidden">Calculating...</div>
+                <div id="crawl-summary" class="crawl-summary hidden"></div>
+                <ul id="ranking-list" class="ranking-list">
+                    <!-- Results injected here -->
+                </ul>
+            </section>
+        </aside>
+
+        <!-- Main Graph Area -->
+        <main class="graph-container">
+            <div id="cy"></div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
