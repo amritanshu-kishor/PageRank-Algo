@@ -3,75 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mini Search Engine - PageRank Visualization</title>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <!-- Cytoscape.js -->
+    <title>PageRank Graph Workbench</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=20260526-frontend-rework">
 </head>
 <body>
-    <div class="app-container">
-        <!-- Sidebar Controls -->
-        <aside class="sidebar">
-            <header>
-                <h1>PageRank Explorer</h1>
-                <p>Simulate how search engines rank pages.</p>
+    <div class="app-shell">
+        <aside class="menu-panel">
+            <header class="brand-block">
+                <div>
+                    <p class="eyebrow">Graph ranking lab</p>
+                    <h1>PageRank Workbench</h1>
+                </div>
+                <span class="status-pill">Local API</span>
             </header>
 
-            <section class="control-card">
-                <h2>Crawl Real Website</h2>
-                <div class="input-group flex-col">
-                    <input type="url" id="crawl-url" placeholder="https://example.com">
-                    <div class="flex-row">
-                        <input type="number" id="crawl-limit" min="1" max="30" value="12" title="Maximum pages to crawl">
-                        <button id="crawl-btn" class="btn btn-accent">Find Connections</button>
+            <section class="stats-grid" aria-label="Graph summary">
+                <div>
+                    <span id="graph-node-count">0</span>
+                    <p>Pages</p>
+                </div>
+                <div>
+                    <span id="graph-link-count">0</span>
+                    <p>Links</p>
+                </div>
+                <div>
+                    <span id="top-node">None</span>
+                    <p>Top rank</p>
+                </div>
+            </section>
+
+            <section class="menu-section">
+                <div class="section-heading">
+                    <span>1</span>
+                    <h2>Add page</h2>
+                </div>
+                <div class="field-row">
+                    <input type="text" id="node-name" placeholder="https://example.com/page">
+                    <button id="add-node-btn" class="btn btn-primary">Add</button>
+                </div>
+            </section>
+
+            <section class="menu-section">
+                <div class="section-heading">
+                    <span>2</span>
+                    <h2>Connect pages</h2>
+                </div>
+                <div class="stack">
+                    <input type="text" id="link-source" placeholder="Source URL or page name">
+                    <div class="connector-row">
+                        <span class="arrow-line"></span>
+                        <span>points to</span>
+                    </div>
+                    <input type="text" id="link-target" placeholder="Target URL or page name">
+                    <button id="add-link-btn" class="btn btn-primary full-width">Add directed link</button>
+                </div>
+            </section>
+
+            <section class="menu-section">
+                <div class="section-heading">
+                    <span>3</span>
+                    <h2>Analyze</h2>
+                </div>
+                <div class="button-grid">
+                    <button id="load-sample-btn" class="btn btn-quiet">Sample</button>
+                    <button id="relayout-btn" class="btn btn-quiet">Layout</button>
+                    <button id="fit-btn" class="btn btn-quiet">Fit</button>
+                    <button id="clear-btn" class="btn btn-danger">Clear</button>
+                </div>
+                <button id="calculate-btn" class="btn btn-accent full-width">Calculate PageRank</button>
+            </section>
+
+            <section class="menu-section optional-tool">
+                <div class="section-heading">
+                    <span>+</span>
+                    <h2>Experimental crawl</h2>
+                </div>
+                <div class="stack">
+                    <input type="url" id="crawl-url" placeholder="https://quotes.toscrape.com">
+                    <div class="field-row compact">
+                        <input type="number" id="crawl-limit" min="1" max="30" value="8" title="Maximum pages to crawl">
+                        <button id="crawl-btn" class="btn btn-quiet">Find links</button>
                     </div>
                 </div>
             </section>
 
-            <section class="control-card">
-                <h2>1. Add Webpages (Nodes)</h2>
-                <div class="input-group">
-                    <input type="text" id="node-name" placeholder="Page Name (e.g., A)" maxlength="10">
-                    <button id="add-node-btn" class="btn btn-primary">Add Node</button>
+            <section class="results-panel hidden" id="results-section">
+                <div class="results-header">
+                    <h2>Ranking</h2>
+                    <div id="loading" class="hidden">Working...</div>
                 </div>
-            </section>
-
-            <section class="control-card">
-                <h2>2. Add Links (Directed Edges)</h2>
-                <div class="input-group flex-col">
-                    <div class="flex-row">
-                        <input type="text" id="link-source" placeholder="Source (A)" maxlength="10">
-                        <span class="arrow-icon">→</span>
-                        <input type="text" id="link-target" placeholder="Target (B)" maxlength="10">
-                    </div>
-                    <button id="add-link-btn" class="btn btn-primary mt-2">Add Link</button>
-                </div>
-            </section>
-
-            <section class="control-card actions">
-                <button id="load-sample-btn" class="btn btn-secondary">Load Sample Graph</button>
-                <button id="clear-btn" class="btn btn-danger">Clear All</button>
-                <button id="calculate-btn" class="btn btn-accent pulse">Calculate PageRank</button>
-            </section>
-
-            <section class="results-card hidden" id="results-section">
-                <h2>Ranking Results</h2>
-                <div id="loading" class="hidden">Calculating...</div>
                 <div id="crawl-summary" class="crawl-summary hidden"></div>
-                <ul id="ranking-list" class="ranking-list">
-                    <!-- Results injected here -->
-                </ul>
+                <ol id="ranking-list" class="ranking-list"></ol>
             </section>
         </aside>
 
-        <!-- Main Graph Area -->
-        <main class="graph-container">
-            <div id="cy"></div>
+        <main class="graph-stage">
+            <div class="stage-toolbar">
+                <div>
+                    <p class="eyebrow">Directed graph</p>
+                    <h2>Pages and inbound authority</h2>
+                </div>
+                <div class="legend">
+                    <span><i class="legend-node"></i> Page</span>
+                    <span><i class="legend-edge"></i> Link</span>
+                    <span><i class="legend-top"></i> Highest rank</span>
+                </div>
+            </div>
+            <div class="canvas-frame">
+                <div id="cy"></div>
+                <div id="empty-state" class="empty-state">
+                    <h3>Build a link graph</h3>
+                    <p>Add pages, connect them, then calculate PageRank.</p>
+                </div>
+            </div>
         </main>
     </div>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=20260526-frontend-rework"></script>
 </body>
 </html>

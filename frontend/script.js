@@ -1,165 +1,78 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Initialize Cytoscape
     const cy = cytoscape({
         container: document.getElementById('cy'),
         style: [
             {
                 selector: 'node',
                 style: {
-                    'background-color': '#6366f1',
-                    'label': 'data(label)',
-                    'color': '#ffffff',
-                    'text-valign': 'center',
-                    'text-halign': 'center',
-                    'font-size': '14px',
+                    'background-color': '#2454c6',
+                    'border-color': '#f6f1e8',
+                    'border-width': 2,
+                    'color': '#fffaf0',
                     'font-family': 'Inter, sans-serif',
-                    'font-weight': 'bold',
-                    'width': 40,
-                    'height': 40,
-                    'transition-property': 'width, height, background-color',
-                    'transition-duration': '0.5s'
+                    'font-size': 11,
+                    'font-weight': 800,
+                    'height': 48,
+                    'label': 'data(label)',
+                    'overlay-opacity': 0,
+                    'text-background-color': '#171717',
+                    'text-background-opacity': 0.72,
+                    'text-background-padding': 4,
+                    'text-margin-y': 8,
+                    'text-max-width': 116,
+                    'text-valign': 'bottom',
+                    'text-wrap': 'ellipsis',
+                    'transition-duration': '0.25s',
+                    'transition-property': 'width, height, background-color, border-color',
+                    'width': 48
+                }
+            },
+            {
+                selector: 'node.top-ranked',
+                style: {
+                    'background-color': '#f0a202',
+                    'border-color': '#fff2bd',
+                    'color': '#ffffff'
                 }
             },
             {
                 selector: 'edge',
                 style: {
-                    'width': 3,
-                    'line-color': '#64748b',
-                    'target-arrow-color': '#64748b',
-                    'target-arrow-shape': 'triangle',
+                    'arrow-scale': 1.15,
                     'curve-style': 'bezier',
-                    'arrow-scale': 1.5,
-                    'transition-property': 'line-color, target-arrow-color',
-                    'transition-duration': '0.5s'
+                    'line-color': '#8c7b67',
+                    'target-arrow-color': '#8c7b67',
+                    'target-arrow-shape': 'triangle',
+                    'transition-duration': '0.25s',
+                    'transition-property': 'line-color, target-arrow-color, width',
+                    'width': 2.2
+                }
+            },
+            {
+                selector: 'edge.top-inbound',
+                style: {
+                    'line-color': '#f0a202',
+                    'target-arrow-color': '#f0a202',
+                    'width': 4
                 }
             }
         ],
-        layout: {
-            name: 'grid'
-        },
-        userZoomingEnabled: true,
+        layout: { name: 'grid' },
+        boxSelectionEnabled: false,
         userPanningEnabled: true,
-        boxSelectionEnabled: false
+        userZoomingEnabled: true
     });
 
-    // Run layout function to nicely organize nodes
-    const applyLayout = () => {
-        cy.layout({
-            name: cy.nodes().length > 12 ? 'cose' : 'circle',
-            animate: true,
-            animationDuration: 500,
-            padding: 50
-        }).run();
-    };
-
-    const labelFromUrl = (value) => {
-        try {
-            const url = new URL(value);
-            const path = url.pathname === '/' ? '/' : url.pathname.replace(/\/$/, '');
-            return `${url.hostname}${path}`.slice(0, 48);
-        } catch {
-            return value;
-        }
-    };
-
-    const addGraphNode = (id) => {
-        if (cy.getElementById(id).empty()) {
-            cy.add({
-                group: 'nodes',
-                data: { id: id, label: labelFromUrl(id) }
-            });
-        }
-    };
-
-    const addGraphEdge = (source, target) => {
-        const edgeId = `${source}->${target}`;
-        if (cy.getElementById(edgeId).empty()) {
-            cy.add({
-                group: 'edges',
-                data: { id: edgeId, source: source, target: target }
-            });
-        }
-    };
-
-    // 2. Add Node Logic
     const addNodeBtn = document.getElementById('add-node-btn');
     const nodeInput = document.getElementById('node-name');
-
-    addNodeBtn.addEventListener('click', () => {
-        const id = nodeInput.value.trim().toUpperCase();
-        if (id && cy.getElementById(id).empty()) {
-            addGraphNode(id);
-            nodeInput.value = '';
-            applyLayout();
-        } else {
-            alert(id ? "Node already exists!" : "Please enter a valid node name.");
-        }
-    });
-
-    // 3. Add Link Logic
     const addLinkBtn = document.getElementById('add-link-btn');
     const sourceInput = document.getElementById('link-source');
     const targetInput = document.getElementById('link-target');
-
-    addLinkBtn.addEventListener('click', () => {
-        const source = sourceInput.value.trim().toUpperCase();
-        const target = targetInput.value.trim().toUpperCase();
-
-        if (source && target) {
-            // Check if nodes exist, if not, create them
-            addGraphNode(source);
-            addGraphNode(target);
-
-            // Check if edge already exists
-            const edgeId = `${source}->${target}`;
-            if (cy.getElementById(edgeId).empty()) {
-                addGraphEdge(source, target);
-                sourceInput.value = '';
-                targetInput.value = '';
-                applyLayout();
-            } else {
-                alert("Link already exists!");
-            }
-        } else {
-            alert("Please enter both source and target nodes.");
-        }
-    });
-
-    // 4. Sample Data Logic
     const loadSampleBtn = document.getElementById('load-sample-btn');
-    loadSampleBtn.addEventListener('click', () => {
-        cy.elements().remove();
-        const sampleNodes = [
-            { data: { id: 'A', label: 'A' } },
-            { data: { id: 'B', label: 'B' } },
-            { data: { id: 'C', label: 'C' } },
-            { data: { id: 'D', label: 'D' } },
-            { data: { id: 'E', label: 'E' } }
-        ];
-        const sampleEdges = [
-            { data: { id: 'A-B', source: 'A', target: 'B' } },
-            { data: { id: 'A-C', source: 'A', target: 'C' } },
-            { data: { id: 'B-C', source: 'B', target: 'C' } },
-            { data: { id: 'C-A', source: 'C', target: 'A' } },
-            { data: { id: 'D-C', source: 'D', target: 'C' } },
-            { data: { id: 'E-D', source: 'E', target: 'D' } },
-            { data: { id: 'B-E', source: 'B', target: 'E' } }
-        ];
-        cy.add(sampleNodes);
-        cy.add(sampleEdges);
-        applyLayout();
-        document.getElementById('results-section').classList.add('hidden');
-    });
-
-    // 5. Clear All Logic
     const clearBtn = document.getElementById('clear-btn');
-    clearBtn.addEventListener('click', () => {
-        cy.elements().remove();
-        document.getElementById('results-section').classList.add('hidden');
-    });
-
-    // 6. Calculate PageRank API call
     const calculateBtn = document.getElementById('calculate-btn');
+    const relayoutBtn = document.getElementById('relayout-btn');
+    const fitBtn = document.getElementById('fit-btn');
     const resultsSection = document.getElementById('results-section');
     const loadingText = document.getElementById('loading');
     const rankingList = document.getElementById('ranking-list');
@@ -167,18 +80,200 @@ document.addEventListener('DOMContentLoaded', () => {
     const crawlBtn = document.getElementById('crawl-btn');
     const crawlUrl = document.getElementById('crawl-url');
     const crawlLimit = document.getElementById('crawl-limit');
+    const nodeCount = document.getElementById('graph-node-count');
+    const linkCount = document.getElementById('graph-link-count');
+    const topNode = document.getElementById('top-node');
+    const emptyState = document.getElementById('empty-state');
+
+    const normalizeInput = (value) => value.trim().replace(/\s+/g, ' ');
+
+    const labelFromValue = (value) => {
+        try {
+            const url = new URL(value);
+            const path = url.pathname === '/' ? '/' : url.pathname.replace(/\/$/, '');
+            return `${url.hostname}${path}`.slice(0, 42);
+        } catch {
+            return value.slice(0, 42);
+        }
+    };
+
+    const updateStats = (scores = null) => {
+        nodeCount.textContent = cy.nodes().length;
+        linkCount.textContent = cy.edges().length;
+        emptyState.classList.toggle('hidden', cy.nodes().length > 0);
+
+        if (!scores || Object.keys(scores).length === 0) {
+            topNode.textContent = 'None';
+            topNode.title = '';
+            return;
+        }
+
+        const [winner] = Object.entries(scores).sort((a, b) => b[1] - a[1])[0];
+        topNode.textContent = labelFromValue(winner);
+        topNode.title = winner;
+    };
+
+    const applyLayout = () => {
+        const layoutName = cy.nodes().length > 8 ? 'cose' : 'circle';
+        cy.layout({
+            name: layoutName,
+            animate: true,
+            animationDuration: 450,
+            fit: true,
+            padding: 70,
+            randomize: false
+        }).run();
+        updateStats();
+    };
+
+    const addGraphNode = (id) => {
+        const cleanId = normalizeInput(id);
+        if (!cleanId || !cy.getElementById(cleanId).empty()) {
+            return false;
+        }
+
+        cy.add({
+            group: 'nodes',
+            data: { id: cleanId, label: labelFromValue(cleanId) }
+        });
+        updateStats();
+        return true;
+    };
+
+    const addGraphEdge = (source, target) => {
+        const cleanSource = normalizeInput(source);
+        const cleanTarget = normalizeInput(target);
+        if (!cleanSource || !cleanTarget) {
+            return false;
+        }
+
+        addGraphNode(cleanSource);
+        addGraphNode(cleanTarget);
+
+        const edgeId = `${cleanSource}->${cleanTarget}`;
+        if (!cy.getElementById(edgeId).empty()) {
+            return false;
+        }
+
+        cy.add({
+            group: 'edges',
+            data: { id: edgeId, source: cleanSource, target: cleanTarget }
+        });
+        updateStats();
+        return true;
+    };
+
+    const clearScores = () => {
+        cy.nodes().removeClass('top-ranked');
+        cy.edges().removeClass('top-inbound');
+        cy.nodes().forEach((node) => {
+            node.style({
+                'width': 48,
+                'height': 48,
+                'font-size': 11,
+                'background-color': '#2454c6'
+            });
+        });
+        cy.edges().forEach((edge) => {
+            edge.style({
+                'line-color': '#8c7b67',
+                'target-arrow-color': '#8c7b67',
+                'width': 2.2
+            });
+        });
+        updateStats();
+    };
+
+    addNodeBtn.addEventListener('click', () => {
+        const id = normalizeInput(nodeInput.value);
+        if (addGraphNode(id)) {
+            nodeInput.value = '';
+            clearScores();
+            applyLayout();
+        } else {
+            alert(id ? 'Page already exists.' : 'Enter a page name or URL.');
+        }
+    });
+
+    nodeInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            addNodeBtn.click();
+        }
+    });
+
+    addLinkBtn.addEventListener('click', () => {
+        const source = normalizeInput(sourceInput.value);
+        const target = normalizeInput(targetInput.value);
+
+        if (!source || !target) {
+            alert('Enter both source and target pages.');
+            return;
+        }
+
+        if (addGraphEdge(source, target)) {
+            sourceInput.value = '';
+            targetInput.value = '';
+            clearScores();
+            applyLayout();
+        } else {
+            alert('That directed link already exists.');
+        }
+    });
+
+    [sourceInput, targetInput].forEach((input) => {
+        input.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                addLinkBtn.click();
+            }
+        });
+    });
+
+    loadSampleBtn.addEventListener('click', () => {
+        cy.elements().remove();
+        ['Home', 'Docs', 'Pricing', 'Blog', 'Support', 'Changelog'].forEach(addGraphNode);
+        [
+            ['Home', 'Docs'],
+            ['Home', 'Pricing'],
+            ['Home', 'Blog'],
+            ['Docs', 'Support'],
+            ['Blog', 'Docs'],
+            ['Pricing', 'Home'],
+            ['Support', 'Docs'],
+            ['Changelog', 'Docs'],
+            ['Blog', 'Changelog']
+        ].forEach(([source, target]) => addGraphEdge(source, target));
+        resultsSection.classList.add('hidden');
+        crawlSummary.classList.add('hidden');
+        clearScores();
+        applyLayout();
+    });
+
+    clearBtn.addEventListener('click', () => {
+        cy.elements().remove();
+        rankingList.innerHTML = '';
+        resultsSection.classList.add('hidden');
+        crawlSummary.classList.add('hidden');
+        updateStats();
+    });
+
+    relayoutBtn.addEventListener('click', applyLayout);
+
+    fitBtn.addEventListener('click', () => {
+        cy.fit(undefined, 70);
+        cy.center();
+    });
 
     crawlBtn.addEventListener('click', async () => {
-        const url = crawlUrl.value.trim();
-        const maxPages = Number(crawlLimit.value) || 12;
+        const url = normalizeInput(crawlUrl.value);
+        const maxPages = Number(crawlLimit.value) || 8;
 
         if (!url) {
-            alert("Enter a website URL first.");
+            alert('Enter a website URL first.');
             return;
         }
 
         resultsSection.classList.remove('hidden');
-        loadingText.textContent = 'Crawling website...';
+        loadingText.textContent = 'Crawling...';
         loadingText.classList.remove('hidden');
         rankingList.innerHTML = '';
         crawlSummary.classList.add('hidden');
@@ -187,9 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('http://127.0.0.1:5000/crawl', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ url: url, max_pages: maxPages })
             });
 
@@ -211,118 +304,111 @@ document.addEventListener('DOMContentLoaded', () => {
             alert(error.message);
             resultsSection.classList.add('hidden');
         } finally {
-            loadingText.textContent = 'Calculating...';
+            loadingText.textContent = 'Working...';
             loadingText.classList.add('hidden');
             crawlBtn.disabled = false;
         }
     });
 
     calculateBtn.addEventListener('click', async () => {
-        const nodes = cy.nodes().map(n => n.id());
-        const edges = cy.edges().map(e => [e.data('source'), e.data('target')]);
+        const nodes = cy.nodes().map((node) => node.id());
+        const edges = cy.edges().map((edge) => [edge.data('source'), edge.data('target')]);
 
         if (nodes.length === 0) {
-            alert("Graph is empty. Add nodes and links first!");
+            alert('Add pages and directed links first.');
             return;
         }
 
-        // UI Updates for loading
         resultsSection.classList.remove('hidden');
         crawlSummary.classList.add('hidden');
+        loadingText.textContent = 'Calculating...';
         loadingText.classList.remove('hidden');
         rankingList.innerHTML = '';
+        calculateBtn.disabled = true;
 
         try {
             const response = await fetch('http://127.0.0.1:5000/calculate', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ pages: nodes, links: edges })
             });
 
-            if (!response.ok) {
-                throw new Error('Failed to compute PageRank. Server returned ' + response.status);
-            }
-
             const data = await response.json();
-            
-            if (data.error) {
-                throw new Error(data.error);
+            if (!response.ok || data.error) {
+                throw new Error(data.error || `Server returned ${response.status}`);
             }
 
             displayResults(data);
             animateGraph(data);
-
         } catch (error) {
             alert(error.message);
             resultsSection.classList.add('hidden');
         } finally {
             loadingText.classList.add('hidden');
+            calculateBtn.disabled = false;
         }
     });
 
-    // 7. Render Results
     function displayResults(scores) {
         rankingList.innerHTML = '';
-        let rank = 1;
-        for (const [nodeId, score] of Object.entries(scores)) {
+
+        Object.entries(scores).forEach(([nodeId, score], index) => {
             const li = document.createElement('li');
+            const rank = document.createElement('span');
+            const name = document.createElement('span');
+            const value = document.createElement('span');
+
             li.className = 'ranking-item';
-            li.innerHTML = `
-                <span class="rank">#${rank}</span>
-                <span class="node-name" title="${nodeId}">${labelFromUrl(nodeId)}</span>
-                <span class="score">${score.toFixed(4)}</span>
-            `;
-            // Staggered animation
-            li.style.animationDelay = `${rank * 0.1}s`;
+            li.style.animationDelay = `${index * 0.045}s`;
+
+            rank.className = 'rank';
+            rank.textContent = `#${index + 1}`;
+
+            name.className = 'node-name';
+            name.title = nodeId;
+            name.textContent = labelFromValue(nodeId);
+
+            value.className = 'score';
+            value.textContent = score.toFixed(4);
+
+            li.append(rank, name, value);
             rankingList.appendChild(li);
-            rank++;
-        }
+        });
     }
 
-    // 8. Animate Graph based on scores
     function animateGraph(scores) {
-        // Find max score to normalize sizing
-        const maxScore = Math.max(...Object.values(scores));
-        
-        cy.nodes().forEach(node => {
+        const values = Object.values(scores);
+        const maxScore = Math.max(...values);
+        const topNodeId = Object.entries(scores).sort((a, b) => b[1] - a[1])[0]?.[0];
+
+        cy.nodes().removeClass('top-ranked');
+        cy.edges().removeClass('top-inbound');
+
+        cy.nodes().forEach((node) => {
             const score = scores[node.id()] || 0;
-            // Base size 40, max extra size 80 based on proportional score
-            const size = 40 + (score / maxScore) * 80;
-            
-            // Highlight color for top node
-            const isTop = score === maxScore;
-            const bgColor = isTop ? '#10b981' : '#6366f1';
+            const ratio = maxScore ? score / maxScore : 0;
+            const size = 42 + ratio * 54;
 
             node.style({
                 'width': size,
                 'height': size,
-                'background-color': bgColor,
-                'font-size': 12 + (score / maxScore) * 8
+                'font-size': 10 + ratio * 4,
+                'background-color': node.id() === topNodeId ? '#f0a202' : '#2454c6'
             });
-        });
 
-        // Also highlight edges pointing to the top node
-        let topNodeId = null;
-        for (const [id, score] of Object.entries(scores)) {
-            if (score === maxScore) topNodeId = id;
-        }
-
-        cy.edges().forEach(edge => {
-            if (edge.target().id() === topNodeId) {
-                edge.style({
-                    'line-color': '#10b981',
-                    'target-arrow-color': '#10b981',
-                    'width': 4
-                });
-            } else {
-                edge.style({
-                    'line-color': '#64748b',
-                    'target-arrow-color': '#64748b',
-                    'width': 3
-                });
+            if (node.id() === topNodeId) {
+                node.addClass('top-ranked');
             }
         });
+
+        cy.edges().forEach((edge) => {
+            if (edge.target().id() === topNodeId) {
+                edge.addClass('top-inbound');
+            }
+        });
+
+        updateStats(scores);
     }
+
+    updateStats();
 });
