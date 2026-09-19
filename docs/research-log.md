@@ -261,3 +261,64 @@ Verified:
 * pagerank-core.md created
 * research-log.md updated
 
+---
+
+## Phase 1 — Step 4: Graph Edge-Case Handling
+
+### Date: 2026-09-20
+
+### Objective
+Establish deliberate, predictable, and robust handling of malformed, incomplete, unusual, and pathological graph inputs before reaching the PageRank calculation core, ensuring clean HTTP 400 error reporting and mathematical validity across all graph topologies.
+
+### Issues Identified & Solved
+
+| Edge Case | Old / Unchecked Behavior | Hardened / New Behavior |
+| :--- | :--- | :--- |
+| `pages` not a list (string, dict, None) | Iterated characters (string) or crashed with TypeError | `ValueError` with descriptive message (HTTP 400) |
+| Node identifier not string (None, int, bool) | Accepted into dictionary, broke serialization or crashed | `ValueError` requiring non-empty string (HTTP 400) |
+| Empty / whitespace-only node identifier | Accepted empty string as node key | `ValueError` requiring non-empty string (HTTP 400) |
+| `links` not a list (string, dict, None) | Crashed with TypeError | `ValueError` with descriptive message (HTTP 400) |
+| Edge not a 2-element sequence | Sliced strings accidentally or crashed with `IndexError` | `ValueError` requiring `[source, target]` pair (HTTP 400) |
+| Edge source/target not string or empty | Accepted None/empty or crashed during set operations | `ValueError` requiring non-empty strings (HTTP 400) |
+| Invalid damping ($\le 0, \ge 1$, NaN, inf) | Infinite loop or incorrect values | `ValueError` requiring $d \in (0, 1)$ finite float (HTTP 400) |
+| Invalid tol ($\le 0$, NaN, inf) | Silent non-convergence or all-iteration execution | `ValueError` requiring positive finite float (HTTP 400) |
+| Invalid max_iterations ($< 1$, bool, float) | Zero iteration / early exit | `ValueError` requiring positive integer $\ge 1$ (HTTP 400) |
+| Isolated single node / empty graph | Handled in core | Explicitly verified, mass conserved |
+| Dangling chains, star graphs, complete graphs | Handled in core | Explicitly verified with dedicated topology tests |
+
+### Artifacts Created / Modified
+
+- **`backend/graph_validator.py`**: Created validation module establishing the input contract.
+- **`backend/app.py`**: Updated `/calculate` endpoint to validate graph structure and parameters, returning HTTP 400 on `ValueError`.
+- **`backend/pagerank.py`**: Added direct validation for `tol` and `max_iterations` parameters.
+- **`tests/test_graph_edge_cases.py`**: Created 46 new unit, edge-case, topological, and API tests.
+- **`docs/graph-contract.md`**: Created formal data contract documentation.
+- **`docs/architecture.md`**: Updated data flow diagram to include validator boundary.
+
+### Test Results
+
+| Test Suite | Tests Passed | Tests Skipped | Tests Failed |
+| :--- | :--- | :--- | :--- |
+| `tests/test_api_baseline.py` | 8 | 0 | 0 |
+| `tests/test_pagerank_baseline.py` | 6 | 2 (expected) | 0 |
+| `tests/test_pagerank_correctness.py` | 36 | 0 | 0 |
+| `tests/test_graph_edge_cases.py` | 46 | 0 | 0 |
+| **Total** | **96** | **2** | **0** |
+
+---
+
+## STEP 4 — COMPLETE
+
+Date: 2026-09-20
+
+Verified:
+* Graph input boundary defined and enforced via `graph_validator.py`
+* Malformed node and edge structures return descriptive `ValueError` and HTTP 400
+* Pathological topologies (empty, single node, complete, star, isolated, disconnected) verified
+* Numerical parameters (`damping`, `tol`, `max_iterations`) validated at both API and core layers
+* 46 new comprehensive tests added in `tests/test_graph_edge_cases.py`
+* All 96 non-skipped tests pass cleanly and reproducibly across multiple runs
+* `docs/graph-contract.md` created, `docs/architecture.md` and `docs/research-log.md` updated
+* No crawler modifications, no frontend changes, no new graph algorithms added
+
+

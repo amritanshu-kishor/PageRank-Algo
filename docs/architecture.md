@@ -20,8 +20,10 @@ Flask API Server (backend/app.py - Port 5000)
          │                               ▼
          │                       backend/crawler.py (Requests / BS4)
          │                               │
-         │ ┌─────────────────────────────┘
-         ▼ ▼
+         ▼                               ▼
+backend/graph_validator.py (Input Validation & Normalization Boundary)
+         │
+         ▼
 backend/pagerank.py (Iterative Power Method Solver)
          │
          ▼

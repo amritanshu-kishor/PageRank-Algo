@@ -37,6 +37,10 @@ def calculate_pagerank(pages, links, damping=0.85, max_iterations=100, tol=1.0e-
         raise ValueError(f"damping must be a finite number, got {damping!r}")
     if not (0.0 < damping < 1.0):
         raise ValueError(f"damping must be strictly between 0 and 1, got {damping}")
+    if not isinstance(tol, (int, float)) or math.isnan(tol) or math.isinf(tol) or tol <= 0:
+        raise ValueError(f"tol must be a positive finite number, got {tol!r}")
+    if not isinstance(max_iterations, int) or isinstance(max_iterations, bool) or max_iterations < 1:
+        raise ValueError(f"max_iterations must be an integer >= 1, got {max_iterations!r}")
 
     # --- Build deterministic node list (preserving input order, deduplicating) ---
     seen = set()
