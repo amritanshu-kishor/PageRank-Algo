@@ -98,24 +98,29 @@ The goal of Step 2 is to convert the baseline behavior verified during Step 1 in
 2. **Flask `jsonify` Key Ordering (`test_calculate_valid_graph`)**: Flask's `jsonify()` serializes dictionary keys in alphabetical order (`JSON_SORT_KEYS`), returning `"A"` before `"B"` in the JSON response payload even though `app.py` sorts items descending by float score value.
 3. **Dangling Node In-Iteration Leakage (`test_c_dangling_node_graph`)**: Dangling nodes do not distribute rank during power iteration loops; sum of ranks is restored to 1.0 via post-hoc vector normalization after convergence.
 
-#### Test Execution & Verification
-- **Test Frameworks Verified**: Python `unittest` (`python -m unittest discover tests`) and `pytest` (`pytest -v tests/`).
-- **Test Suite Results**: 16/16 tests passed deterministically in ~3.1s.
+#### Clean Environment Reproducibility Verification
+- **Fresh Virtual Environment**: Created fresh `test_env` virtual environment without pre-installed packages.
+- **Dependency Installation**: `pip install -r requirements.txt` executed successfully (installed Flask 3.0.2, Flask-Cors 4.0.0, networkx 3.2.1, numpy 1.26.4, beautifulsoup4 4.12.3, requests 2.31.0, pytest 9.1.1).
+- **Run 1 (`python -m pytest -q`)**: 16/16 passed in 3.14s.
+- **Run 2 (`python -m pytest -q`)**: 16/16 passed in 3.03s (100% deterministic reproducibility).
+- **Unittest Entry Point (`python -m unittest discover tests`)**: 16/16 passed in 2.73s.
+- **Pytest Entry Point (`pytest -v tests/`)**: 16/16 passed in 3.06s.
 
 ---
 
-## Step 2 Completion Status
-
-### STEP 2 — COMPLETE
+## STEP 2 — COMPLETE
 
 Date: 2026-09-19
 
 Verified:
-* Automated test directory `tests/` created
-* JSON graph fixtures created under `tests/fixtures/`
-* `test_pagerank_baseline.py` implemented and verified
-* `test_api_baseline.py` implemented and verified
-* Existing application behavior captured without source code modification
-* Baseline test suite executed with 100% pass rate (16/16 passed)
-* Step 2 documented in research log
+
+* Reproducible test environment established
+* Dependencies verified
+* Baseline tests executed
+* All baseline tests passed
+* Tests repeated successfully
+* Results reproducible
+* Baseline implementation unchanged
+* Documentation updated
+
 
