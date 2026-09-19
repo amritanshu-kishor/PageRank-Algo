@@ -79,3 +79,43 @@ Verified:
 * Baseline tests executed
 * Known limitations recorded
 * Current baseline preserved
+
+---
+
+### Step 2 — Establish Reproducible Baseline Tests
+
+#### Objective
+The goal of Step 2 is to convert the baseline behavior verified during Step 1 into a repeatable, automated test suite in `tests/` that freezes the ground-truth application performance and algorithm scores without altering existing application code.
+
+#### Test Architecture Established
+- `tests/__init__.py`: Package initializer.
+- `tests/fixtures/*.json`: JSON graph data fixtures for simple, cycle, dangling, disconnected, self-loop, duplicate edge, and empty graphs.
+- `tests/test_pagerank_baseline.py`: Unit test suite verifying core algorithm behavior, dangling node rank handling, duplicate edge out-degree accumulation, invalid target link rank leakage, and empty graph entry conditions.
+- `tests/test_api_baseline.py`: Integration test suite verifying Flask REST API endpoints (`/calculate` and `/crawl`), request payload validation, error responses, Flask JSON key ordering, and mocked crawling responses.
+
+#### Key Baseline Discoveries Captured in Automated Tests
+1. **Invalid Target Links (`test_invalid_target_edge`)**: If `links` contains an edge targeting a node not present in `pages` (`A -> C` where `C` is omitted), target `C` is ignored during rank accumulation while `out_degree[A]` is incremented to 1. Both `A` and `B` receive equal damping rank `0.075` and normalize to `0.5` each.
+2. **Flask `jsonify` Key Ordering (`test_calculate_valid_graph`)**: Flask's `jsonify()` serializes dictionary keys in alphabetical order (`JSON_SORT_KEYS`), returning `"A"` before `"B"` in the JSON response payload even though `app.py` sorts items descending by float score value.
+3. **Dangling Node In-Iteration Leakage (`test_c_dangling_node_graph`)**: Dangling nodes do not distribute rank during power iteration loops; sum of ranks is restored to 1.0 via post-hoc vector normalization after convergence.
+
+#### Test Execution & Verification
+- **Test Frameworks Verified**: Python `unittest` (`python -m unittest discover tests`) and `pytest` (`pytest -v tests/`).
+- **Test Suite Results**: 16/16 tests passed deterministically in ~3.1s.
+
+---
+
+## Step 2 Completion Status
+
+### STEP 2 — COMPLETE
+
+Date: 2026-09-19
+
+Verified:
+* Automated test directory `tests/` created
+* JSON graph fixtures created under `tests/fixtures/`
+* `test_pagerank_baseline.py` implemented and verified
+* `test_api_baseline.py` implemented and verified
+* Existing application behavior captured without source code modification
+* Baseline test suite executed with 100% pass rate (16/16 passed)
+* Step 2 documented in research log
+
