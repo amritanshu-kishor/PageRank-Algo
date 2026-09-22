@@ -6,14 +6,15 @@ Verifies:
 - Dataset validation against Step 4 graph contract
 - Single experiment execution, structural analysis inclusion, runtime measurement
 - Detailed PageRank instrumentation (iterations, convergence status, final L1 error)
-- Repeated experiment execution for runtime stability measurement
+- Separation of deterministic experiment content from execution metadata (timestamp)
+- Repeated experiment execution with rank stability verification across runs using Step 8 comparator
 - Damping, tolerance, max_iterations, and scalability parameter sweeps
-- Integration with Step 8 rank stability comparison infrastructure
 - Machine-readable result export to JSON files
 - Configuration validation and error handling for invalid parameters/graphs
 """
 
 import json
+import math
 import os
 import tempfile
 import sys
@@ -176,17 +177,18 @@ def test_calculate_pagerank_detailed_empty_graph():
 
 
 # =============================================================================
-# 3. Experiment Runner Tests
+# 3. Experiment Runner & Reproducibility Tests
 # =============================================================================
 
 def test_run_experiment_success():
-    """Verify single experiment execution with structural analysis."""
+    """Verify single experiment execution with structural analysis and execution metadata."""
     pages = DATASET_A["pages"]
     links = DATASET_A["links"]
     res = run_experiment(pages, links, dataset_id="chain-4")
 
     assert res["dataset_id"] == "chain-4"
-    assert "timestamp" in res
+    assert "execution_metadata" in res
+    assert "timestamp" in res["execution_metadata"]
     assert res["node_count"] == 4
     assert res["edge_count"] == 3
     assert res["parameters"]["damping"] == 0.85
@@ -215,7 +217,7 @@ def test_run_experiment_invalid_parameters():
 
 
 def test_run_repeated_experiment():
-    """Verify repeated experiment produces runtime statistics."""
+    """Verify repeated experiment produces runtime statistics and ranking stability metrics."""
     pages = DATASET_B["pages"]
     links = DATASET_B["links"]
     res = run_repeated_experiment(pages, links, num_runs=3, dataset_id="cycle-3")
@@ -225,6 +227,97 @@ def test_run_repeated_experiment():
     assert len(stats["runtimes_all_seconds"]) == 3
     assert stats["runtime_min_seconds"] <= stats["runtime_mean_seconds"] <= stats["runtime_max_seconds"]
     assert stats["runtime_stddev_seconds"] >= 0.0
+
+    assert "ranking_stability" in res
+    assert res["ranking_stability"]["reference_run"] == 1
+    assert len(res["ranking_stability"]["comparisons"]) == 2
+
+
+def test_repeated_experiment_rank_stability():
+    """Test 1 — Verify repeated deterministic runs yield rank stability (L1=0, L2=0, Cosine=1, Spearman=1, Kendall=1)."""
+    pages = DATASET_C["pages"]
+    links = DATASET_C["links"]
+    res = run_repeated_experiment(pages, links, num_runs=3, dataset_id="dangling-3")
+
+    stability = res["ranking_stability"]
+    assert stability["reference_run"] == 1
+    comparisons = stability["comparisons"]
+    assert len(comparisons) == 2
+
+    for comp in comparisons:
+        metrics = comp["metrics"]
+        assert metrics["l1_distance"] == pytest.approx(0.0, abs=1e-12)
+        assert metrics["l2_distance"] == pytest.approx(0.0, abs=1e-12)
+        assert metrics["cosine_similarity"] == pytest.approx(1.0, abs=1e-12)
+        assert metrics["spearman_correlation"] == pytest.approx(1.0, abs=1e-12)
+        assert metrics["kendall_tau"] == pytest.approx(1.0, abs=1e-12)
+        assert metrics["max_rank_displacement"] == 0
+        assert metrics["mean_rank_displacement"] == pytest.approx(0.0, abs=1e-12)
+
+
+def test_repeated_experiment_multiple_comparisons():
+    """Test 2 — Verify that for num_runs = 3, multiple comparisons are recorded against reference run."""
+    pages = DATASET_A["pages"]
+    links = DATASET_A["links"]
+    res3 = run_repeated_experiment(pages, links, num_runs=3, dataset_id="chain-4")
+    comparisons = res3["ranking_stability"]["comparisons"]
+    assert len(comparisons) == 2
+    assert comparisons[0]["run_index"] == 2
+    assert comparisons[1]["run_index"] == 3
+
+    # num_runs = 1 case
+    res1 = run_repeated_experiment(pages, links, num_runs=1, dataset_id="chain-4")
+    assert res1["ranking_stability"]["reference_run"] == 1
+    assert len(res1["ranking_stability"]["comparisons"]) == 0
+
+
+def test_timestamp_separation():
+    """Test 3 — Verify timestamp is separated under execution_metadata and deterministic content is independent."""
+    pages = DATASET_B["pages"]
+    links = DATASET_B["links"]
+
+    res1 = run_experiment(pages, links, dataset_id="cycle-3")
+    res2 = run_experiment(pages, links, dataset_id="cycle-3")
+
+    # Timestamp is under execution_metadata
+    assert "execution_metadata" in res1
+    assert "timestamp" in res1["execution_metadata"]
+    assert "execution_metadata" in res2
+    assert "timestamp" in res2["execution_metadata"]
+
+    # Deterministic content is identical
+    assert res1["dataset_id"] == res2["dataset_id"]
+    assert res1["node_count"] == res2["node_count"]
+    assert res1["edge_count"] == res2["edge_count"]
+    assert res1["parameters"] == res2["parameters"]
+    assert res1["ranking"] == res2["ranking"]
+    assert res1["performance"]["iterations"] == res2["performance"]["iterations"]
+    assert res1["performance"]["converged"] == res2["performance"]["converged"]
+    assert res1["performance"]["final_error"] == res2["performance"]["final_error"]
+
+
+def test_runtime_variability():
+    """Test 4 — Verify runtime values are finite and >= 0."""
+    pages = DATASET_A["pages"]
+    links = DATASET_A["links"]
+
+    res_single = run_experiment(pages, links, dataset_id="chain-4")
+    rt_single = res_single["performance"]["runtime_seconds"]
+    assert isinstance(rt_single, float)
+    assert not math.isnan(rt_single)
+    assert not math.isinf(rt_single)
+    assert rt_single >= 0.0
+
+    res_rep = run_repeated_experiment(pages, links, num_runs=3, dataset_id="chain-4")
+    pstats = res_rep["performance_stats"]
+    for rt in pstats["runtimes_all_seconds"]:
+        assert isinstance(rt, float)
+        assert not math.isnan(rt)
+        assert not math.isinf(rt)
+        assert rt >= 0.0
+
+    assert not math.isnan(pstats["runtime_mean_seconds"])
+    assert pstats["runtime_mean_seconds"] >= 0.0
 
 
 def test_run_repeated_experiment_invalid_runs():

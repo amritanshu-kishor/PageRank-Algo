@@ -587,6 +587,8 @@ Four validation gaps identified during final gate review were corrected without 
 
 ---
 
+---
+
 ## Phase 1 — Step 9: Experiment & Measurement Layer
 
 ### Date: 2026-09-23
@@ -629,6 +631,48 @@ Build a reusable, reproducible **Experiment & Measurement Layer** (`experiments/
 | `tests/test_pagerank_correctness.py` | 36 Passed | 36 Passed | 36 Passed |
 | `tests/test_ranking_comparator.py` | 47 Passed | 47 Passed | 47 Passed |
 | **Total Full Suite** | **227 Passed, 2 Skipped** | **227 Passed, 2 Skipped** | **227 Passed, 2 Skipped** |
+
+---
+
+## Phase 1 — Step 9 Final Reproducibility Correction
+
+### Date: 2026-09-23
+
+### Original Deficiencies Addressed
+1. **Top-Level Timestamp Non-Determinism**: `run_experiment()` previously placed `timestamp` at top level, rendering the result dict non-deterministic.
+2. **Repeated Run Rank Stability Gap**: `run_repeated_experiment()` measured runtime statistics across repeated runs but did not compute rank stability metrics across run output rankings.
+
+### Exact Corrections Made
+1. **Timestamp Separation (`experiments/runner.py`)**:
+   - Moved `timestamp` under `execution_metadata.timestamp` dict in both `run_experiment()` and `run_repeated_experiment()`.
+   - Guaranteed that top-level result fields (`dataset_id`, `node_count`, `edge_count`, `parameters`, `performance.iterations`, `performance.converged`, `performance.final_error`, `ranking`, `structural_analysis`) are purely deterministic.
+2. **Repeated Run Rank Stability Comparison (`experiments/runner.py`)**:
+   - Updated `run_repeated_experiment()` to store output rankings from all `num_runs`.
+   - Used Step 8 `compare_rankings()` to compare each subsequent run's ranking (Run 2, Run 3, ...) against the reference ranking (Run 1).
+   - Added `ranking_stability` dictionary containing `reference_run` and `comparisons` list with full Step 8 comparison metrics (L1, L2, Cosine, Spearman, Kendall, Top-K overlap, rank displacements).
+3. **Regression Test Suite (`tests/test_experiments.py`)**:
+   - Added `test_repeated_experiment_rank_stability` (verifies L1=0, L2=0, Cosine=1, Spearman=1, Kendall=1, max_displacement=0).
+   - Added `test_repeated_experiment_multiple_comparisons` (verifies multi-run comparisons array against reference run).
+   - Added `test_timestamp_separation` (verifies timestamp under `execution_metadata` and deterministic content equivalence across runs).
+   - Added `test_runtime_variability` (verifies runtimes are finite numbers >= 0).
+4. **Documentation Updates (`docs/experiments.md`)**:
+   - Documented deterministic result content vs non-deterministic execution metadata (`timestamp`, `runtime`) and explained physical reasons for variance.
+   - Updated `run_repeated_experiment` output schema.
+
+### Test Execution Matrix (3 Consecutive Runs)
+
+| Test Suite | Run 1 | Run 2 | Run 3 |
+| :--- | :--- | :--- | :--- |
+| `tests/test_experiments.py` (dedicated) | 36 Passed | 36 Passed | 36 Passed |
+| `tests/test_api_baseline.py` | 8 Passed | 8 Passed | 8 Passed |
+| `tests/test_crawler.py` | 25 Passed | 25 Passed | 25 Passed |
+| `tests/test_crawler_pagerank_integration.py` | 11 Passed | 11 Passed | 11 Passed |
+| `tests/test_graph_analysis.py` | 14 Passed | 14 Passed | 14 Passed |
+| `tests/test_graph_edge_cases.py` | 48 Passed | 48 Passed | 48 Passed |
+| `tests/test_pagerank_baseline.py` | 6 Passed, 2 Skipped | 6 Passed, 2 Skipped | 6 Passed, 2 Skipped |
+| `tests/test_pagerank_correctness.py` | 36 Passed | 36 Passed | 36 Passed |
+| `tests/test_ranking_comparator.py` | 47 Passed | 47 Passed | 47 Passed |
+| **Total Full Suite** | **231 Passed, 2 Skipped** | **231 Passed, 2 Skipped** | **231 Passed, 2 Skipped** |
 
 ---
 

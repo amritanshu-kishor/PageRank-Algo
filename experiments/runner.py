@@ -50,6 +50,8 @@ def run_experiment(
     :param dataset_id: Identifier tag for the dataset. Default "custom".
     :param include_graph_analysis: If True, include structural analysis dict.
     :return: dict with comprehensive, machine-readable experiment results.
+             Deterministic content is kept at top level; non-deterministic
+             execution timestamp is stored under execution_metadata.
     :raises ValueError: If graph or parameters are invalid.
     """
     # 1. Validate graph input
@@ -78,7 +80,6 @@ def run_experiment(
 
     result = {
         "dataset_id": dataset_id,
-        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "node_count": len(valid_pages),
         "edge_count": len(valid_links),
         "parameters": {
@@ -93,6 +94,9 @@ def run_experiment(
             "final_error": detailed_result["final_error"],
         },
         "ranking": detailed_result["ranking"],
+        "execution_metadata": {
+            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        },
     }
 
     if structural_analysis is not None:
@@ -111,7 +115,10 @@ def run_repeated_experiment(
     dataset_id="custom",
 ):
     """
-    Run an experiment multiple times to measure runtime stability and statistics.
+    Run an experiment multiple times to measure runtime stability and rank stability.
+
+    Executes the PageRank algorithm num_runs times. Compares each run's ranking output
+    against the reference ranking (Run 1) using compare_rankings() from Step 8.
 
     :param pages: List of node identifiers.
     :param links: List of directed edges.
@@ -120,7 +127,8 @@ def run_repeated_experiment(
     :param max_iterations: Maximum iterations.
     :param tol: Convergence tolerance.
     :param dataset_id: Identifier string.
-    :return: dict with summary of repeated runs including runtime mean, min, max, stddev.
+    :return: dict with performance statistics, rank stability comparison metrics,
+             reference ranking, and execution metadata.
     :raises ValueError: If num_runs < 1 or input validation fails.
     """
     if not isinstance(num_runs, int) or isinstance(num_runs, bool) or num_runs < 1:
@@ -136,16 +144,20 @@ def run_repeated_experiment(
     m = validated_params["max_iterations"]
 
     runtimes = []
+    rankings_all = []
     last_result = None
 
     for _ in range(num_runs):
         t_start = time.perf_counter()
-        last_result = calculate_pagerank_detailed(
+        res = calculate_pagerank_detailed(
             valid_pages, valid_links, damping=d, max_iterations=m, tol=t
         )
         t_end = time.perf_counter()
         runtimes.append(t_end - t_start)
+        rankings_all.append(res["ranking"])
+        last_result = res
 
+    # Compute runtime performance statistics
     mean_runtime = sum(runtimes) / len(runtimes)
     min_runtime = min(runtimes)
     max_runtime = max(runtimes)
@@ -155,6 +167,22 @@ def run_repeated_experiment(
         stddev_runtime = math.sqrt(variance)
     else:
         stddev_runtime = 0.0
+
+    # Compute rank stability across repeated runs using Step 8 compare_rankings()
+    # Reference run is Run 1 (index 0).
+    ref_ranking = rankings_all[0]
+    comparisons = []
+    for idx in range(1, num_runs):
+        metrics = compare_rankings(rankings_all[idx], ref_ranking)
+        comparisons.append({
+            "run_index": idx + 1,
+            "metrics": metrics,
+        })
+
+    ranking_stability = {
+        "reference_run": 1,
+        "comparisons": comparisons,
+    }
 
     return {
         "dataset_id": dataset_id,
@@ -174,7 +202,11 @@ def run_repeated_experiment(
             "converged": last_result["converged"],
             "final_error": last_result["final_error"],
         },
-        "ranking": last_result["ranking"],
+        "ranking_stability": ranking_stability,
+        "ranking": ref_ranking,
+        "execution_metadata": {
+            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        },
     }
 
 
