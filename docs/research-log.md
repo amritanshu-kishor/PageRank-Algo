@@ -288,12 +288,12 @@ Establish deliberate, predictable, and robust handling of malformed, incomplete,
 
 ### Artifacts Created / Modified
 
-- **`backend/graph_validator.py`**: Created validation module establishing the input contract.
+- **`backend/graph_validator.py`**: Created validation module establishing the input contract; exact 2-element check `len(edge) == 2` enforced for all edges.
 - **`backend/app.py`**: Updated `/calculate` endpoint to validate graph structure and parameters, returning HTTP 400 on `ValueError`.
 - **`backend/pagerank.py`**: Added direct validation for `tol` and `max_iterations` parameters.
-- **`tests/test_graph_edge_cases.py`**: Created 46 new unit, edge-case, topological, and API tests.
+- **`tests/test_graph_edge_cases.py`**: Created 48 unit, edge-case, topological, and API tests (including edge length boundaries).
 - **`docs/graph-contract.md`**: Created formal data contract documentation.
-- **`docs/architecture.md`**: Updated data flow diagram to include validator boundary.
+- **`docs/architecture.md`**: Updated data flow diagram to include validator boundary and corrected PageRank solver description (in-iteration dangling redistribution without post-hoc normalization).
 
 ### Test Results
 
@@ -302,23 +302,24 @@ Establish deliberate, predictable, and robust handling of malformed, incomplete,
 | `tests/test_api_baseline.py` | 8 | 0 | 0 |
 | `tests/test_pagerank_baseline.py` | 6 | 2 (expected) | 0 |
 | `tests/test_pagerank_correctness.py` | 36 | 0 | 0 |
-| `tests/test_graph_edge_cases.py` | 46 | 0 | 0 |
-| **Total** | **96** | **2** | **0** |
+| `tests/test_graph_edge_cases.py` | 48 | 0 | 0 |
+| **Total** | **98** | **2** | **0** |
 
 ---
 
 ## STEP 4 — COMPLETE
 
-Date: 2026-09-20
+Date: 2026-09-20 (Final review fixes: 2026-09-22)
 
 Verified:
 * Graph input boundary defined and enforced via `graph_validator.py`
+* Exact 2-element edge constraint (`len(edge) == 2`) strictly validated
 * Malformed node and edge structures return descriptive `ValueError` and HTTP 400
 * Pathological topologies (empty, single node, complete, star, isolated, disconnected) verified
 * Numerical parameters (`damping`, `tol`, `max_iterations`) validated at both API and core layers
-* 46 new comprehensive tests added in `tests/test_graph_edge_cases.py`
-* All 96 non-skipped tests pass cleanly and reproducibly across multiple runs
+* 48 comprehensive tests in `tests/test_graph_edge_cases.py`
+* All 98 non-skipped tests pass cleanly and reproducibly across multiple runs
 * `docs/graph-contract.md` created, `docs/architecture.md` and `docs/research-log.md` updated
-* No crawler modifications, no frontend changes, no new graph algorithms added
+* No PageRank algorithm changes, no crawler modifications, no frontend changes, no Step 5 work started
 
 

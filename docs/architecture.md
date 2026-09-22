@@ -68,10 +68,10 @@ frontend/script.js (Cytoscape Graph Animation & UI Rendering)
 ### 2.5 Algorithmic Calculation Layer (`backend/pagerank.py`)
 - **Technology**: Pure Python iterative solver (no external graph libraries used for solver).
 - **Responsibility**:
-  - Computes PageRank scores given node list and directed edge list using the classic iterative formula:
-    $$PR(A) = \frac{1-d}{N} + d \sum_{T_i \to A} \frac{PR(T_i)}{C(T_i)}$$
-  - Enforces convergence check ($\sum |PR_{new} - PR_{old}| < \text{tol}$) or stops at `max_iterations`.
-  - Performs post-hoc vector sum normalization.
+  - Computes PageRank scores given node list and directed edge list using standard power iteration with in-iteration dangling-node rank redistribution:
+    $$PR(i) = \frac{1-d}{N} + d \left[ \frac{\sum_{k \in \text{dangling}} PR(k)}{N} + \sum_{j \to i} \frac{PR(j)}{C(j)} \right]$$
+  - Enforces L1-norm convergence check ($\sum |PR_{new}(i) - PR_{old}(i)| < \text{tol}$) or stops at `max_iterations`.
+  - Preserves exact total rank mass conservation ($\sum PR(i) = 1.0$) throughout power iteration without relying on post-hoc normalization.
 
 ---
 

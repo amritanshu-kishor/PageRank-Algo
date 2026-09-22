@@ -100,6 +100,10 @@ class TestEdgeValidation:
         with pytest.raises(ValueError, match=r"must have exactly 2 elements"):
             validate_graph(["A", "B"], [["A"]])
 
+    def test_edge_cannot_have_more_than_2_elements(self):
+        with pytest.raises(ValueError, match=r"must have exactly 2 elements"):
+            validate_graph(["A", "B", "C"], [["A", "B", "C"]])
+
     def test_edge_source_cannot_be_none(self):
         with pytest.raises(ValueError, match=r"\(source\) must be a non-empty string"):
             validate_graph(["A", "B"], [[None, "B"]])
@@ -313,6 +317,16 @@ class TestAPIEdgeCases:
         resp = client.post('/calculate', json={
             'pages': ['A', 'B'],
             'links': [['A']]  # only 1 element
+        })
+        assert resp.status_code == 400
+        data = resp.get_json()
+        assert 'error' in data
+        assert 'exactly 2 elements' in data['error']
+
+    def test_api_rejects_edge_with_more_than_2_elements(self, client):
+        resp = client.post('/calculate', json={
+            'pages': ['A', 'B', 'C'],
+            'links': [['A', 'B', 'C']]  # 3 elements
         })
         assert resp.status_code == 400
         data = resp.get_json()

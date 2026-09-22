@@ -77,7 +77,7 @@ def validate_graph(pages, links):
             raise ValueError(
                 f"'links[{i}]' must be a [source, target] pair, got {type(edge).__name__}: {edge!r}."
             )
-        if len(edge) < 2:
+        if len(edge) != 2:
             raise ValueError(
                 f"'links[{i}]' must have exactly 2 elements [source, target], "
                 f"got {len(edge)} element(s): {edge!r}."
