@@ -440,6 +440,60 @@ Verified:
 * `docs/crawler.md` created, `docs/architecture.md` and `docs/research-log.md` updated
 * No PageRank algorithm changes, no crawler improvements beyond scope, no frontend redesign, no Step 7 work started
 
+---
+
+## Phase 1 — Step 7: Crawler → Graph → PageRank Integration
+
+### Date: 2026-09-22
+
+### Objective
+Integrate the hardened crawler, graph validator, graph analyzer, and PageRank computational engine into a unified, sequential, reproducible data pipeline:
+`Crawler -> Graph Validator -> Graph Analysis -> PageRank Engine -> API Result`.
+
+### Invariants & Pipeline Verification
+
+1. **Boundary Enforcement**: Raw crawler output `(raw_pages, raw_links)` is strictly passed into `validate_graph()` before reachability/ranking execution. Malformed graphs fail at the validator boundary with `HTTP 400` without reaching PageRank.
+2. **Node & Edge Consistency**:
+   $$\text{Set}(Pages_{\text{crawler}}) = \text{Set}(Pages_{\text{validated}}) = \text{Set}(Nodes_{\text{analysis}}) = \text{Set}(Nodes_{\text{pagerank}})$$
+3. **Rank Coverage & Mass Conservation**: Every node in the validated graph receives a PageRank score, and total rank mass sums to $1.0 \quad (\pm 10^{-5})$.
+4. **Determinism**: Identical mocked crawls produce bitwise identical outputs across repeated runs.
+
+### Artifacts Created / Modified
+
+- **`backend/app.py`**: Updated `POST /crawl` to execute the sequential pipeline (`crawl_site -> validate_graph -> analyze_graph -> calculate_pagerank`).
+- **`tests/test_crawler_pagerank_integration.py`**: Created 11 end-to-end integration tests covering chains, cycles, dangling nodes, disconnected graphs, duplicate links, self-loops, isolated nodes, boundary failures, repeated pipeline determinism, and API `/crawl` verification.
+- **`docs/pipeline-integration.md`**: Created formal documentation for the integrated pipeline contracts, boundary sequence, and invariants.
+- **`docs/architecture.md`**: Updated system architecture diagram to reflect the sequential pipeline.
+
+### Test Execution Matrix (3 Consecutive Runs)
+
+| Test Suite | Run 1 | Run 2 | Run 3 |
+| :--- | :--- | :--- | :--- |
+| `tests/test_api_baseline.py` | 8 Passed | 8 Passed | 8 Passed |
+| `tests/test_pagerank_baseline.py` | 6 Passed, 2 Skipped | 6 Passed, 2 Skipped | 6 Passed, 2 Skipped |
+| `tests/test_pagerank_correctness.py` | 36 Passed | 36 Passed | 36 Passed |
+| `tests/test_graph_edge_cases.py` | 48 Passed | 48 Passed | 48 Passed |
+| `tests/test_graph_analysis.py` | 14 Passed | 14 Passed | 14 Passed |
+| `tests/test_crawler.py` | 25 Passed | 25 Passed | 25 Passed |
+| `tests/test_crawler_pagerank_integration.py` | 11 Passed | 11 Passed | 11 Passed |
+| **Total** | **148 Passed, 2 Skipped** | **148 Passed, 2 Skipped** | **148 Passed, 2 Skipped** |
+
+---
+
+## STEP 7 — COMPLETE
+
+Date: 2026-09-22
+
+Verified:
+* Sequential integration pipeline (`Crawler -> Validator -> Analysis -> PageRank`) established in `backend/app.py`
+* All 6 data consistency invariants verified across end-to-end tests
+* Validation boundary strictly enforced prior to graph analysis and PageRank execution
+* 11 dedicated integration tests created in `tests/test_crawler_pagerank_integration.py`
+* All 148 non-skipped tests pass consistently across 3 consecutive runs
+* `docs/pipeline-integration.md` created, `docs/architecture.md` and `docs/research-log.md` updated
+* No PageRank algorithm changes, no frontend redesign, no Step 8 work started
+
+
 
 
 

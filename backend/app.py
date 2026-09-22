@@ -68,20 +68,38 @@ def analyze():
 def crawl():
     try:
         data = request.get_json()
-        if not data or 'url' not in data:
+        if not isinstance(data, dict) or 'url' not in data:
             return jsonify({'error': 'Invalid input format. Expected url.'}), 400
 
-        graph = crawl_site(data['url'], data.get('max_pages', 12))
-        if not graph['pages']:
+        # Step 1: Execute Crawler
+        crawl_res = crawl_site(data['url'], data.get('max_pages', 12))
+        raw_pages = crawl_res.get('pages', [])
+        raw_links = crawl_res.get('links', [])
+
+        if not raw_pages:
             return jsonify({'error': 'No crawlable pages found for that URL.'}), 400
 
-        scores = calculate_pagerank(graph['pages'], graph['links'])
-        sorted_scores = dict(sorted(scores.items(), key=lambda item: item[1], reverse=True))
+        # Step 2: Validate Graph via Step 4 Boundary
+        pages, links = validate_graph(raw_pages, raw_links)
+
+        # Step 3: Structural Graph Analysis
+        analysis_summary = analyze_graph(pages, links, validate=False)
+
+        # Step 4: PageRank Calculation
+        pr_scores = calculate_pagerank(pages, links)
+        sorted_scores = dict(sorted(pr_scores.items(), key=lambda item: item[1], reverse=True))
 
         return jsonify({
-            'pages': graph['pages'],
-            'links': graph['links'],
-            'scores': sorted_scores
+            'pages': pages,
+            'links': links,
+            'scores': sorted_scores,
+            'analysis': analysis_summary,
+            'metadata': {
+                'pages_crawled': crawl_res.get('pages_crawled', len(pages)),
+                'pages_failed': crawl_res.get('pages_failed', 0),
+                'start_url': crawl_res.get('start_url'),
+                'max_pages': crawl_res.get('max_pages')
+            }
         }), 200
 
     except ValueError as e:

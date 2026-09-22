@@ -18,19 +18,19 @@ frontend/script.js (Cytoscape.js & DOM Event Handler)
 Flask API Server (backend/app.py - Port 5000)
          │                               │                               │
          │                               │                               ▼
-         │                               │                       backend/crawler.py (Hardened BFS Web Crawler)
+         │                               │                     backend/crawler.py (Hardened BFS Crawler)
          │                               │                               │
          ▼                               ▼                               ▼
 backend/graph_validator.py (Input Validation & Normalization Boundary)
-         │                               │
-         ├───────────────────────────────┘
          │
-         ├───────────────────────────────┐
-         ▼                               ▼
-backend/pagerank.py (Power Solver)     backend/graph_analyzer.py (Structural Analysis)
-         │                               │
-         ▼                               ▼
-HTTP Response JSON (PageRank Scores / Structural Summary / Discovered Graph)
+         ▼
+backend/graph_analyzer.py (Structural Graph Analysis Layer)
+         │
+         ▼
+backend/pagerank.py (Iterative Power Method Solver)
+         │
+         ▼
+HTTP Response JSON (Sorted PageRank Scores + Structural Analysis + Graph Data)
          │
          ▼
 frontend/script.js (Cytoscape Graph Animation & UI Rendering)
