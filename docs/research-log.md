@@ -322,4 +322,61 @@ Verified:
 * `docs/graph-contract.md` created, `docs/architecture.md` and `docs/research-log.md` updated
 * No PageRank algorithm changes, no crawler modifications, no frontend changes, no Step 5 work started
 
+---
+
+## Phase 1 — Step 5: Graph Analysis Layer
+
+### Date: 2026-09-22
+
+### Objective
+Create a reusable, deterministic Graph Analysis Layer (`backend/graph_analyzer.py`) that computes structural graph properties (node count, edge count, density, degrees, dangling & isolated node counts, WCC, SCC) on top of the validated graph contract established in Step 4.
+
+### Capabilities Implemented & Tested
+
+1. **`node_count`**: Number of unique validated nodes in the graph.
+2. **`edge_count`**: Number of unique valid directed edges (excluding duplicates and unknown node references).
+3. **`density`**: Directed graph density $E / (N \times (N - 1))$ for $N \ge 2$, and $0.0$ for $N < 2$.
+4. **`in_degree`**: Mapping of every node ID to its in-degree count (including $0$).
+5. **`out_degree`**: Mapping of every node ID to its out-degree count (including $0$).
+6. **`dangling_node_count`**: Count of nodes with `out_degree == 0`.
+7. **`isolated_node_count`**: Count of nodes with `in_degree == 0 AND out_degree == 0`.
+8. **`weakly_connected_components`**: WCC discovery treating edges as undirected connections; output ordered deterministically.
+9. **`strongly_connected_components`**: SCC discovery via Tarjan's algorithm for directed mutual reachability; output ordered deterministically.
+10. **`POST /analyze`**: API endpoint exposing structural graph analysis with `HTTP 400` validation error handling.
+
+### Artifacts Created / Modified
+
+- **`backend/graph_analyzer.py`**: Created deterministic graph structural analysis module.
+- **`backend/app.py`**: Added `POST /analyze` API endpoint using `analyze_graph()`.
+- **`tests/test_graph_analysis.py`**: Created 14 unit and API integration tests covering all 10 topological cases.
+- **`docs/graph-analysis.md`**: Created formal documentation for graph structural analysis.
+- **`docs/architecture.md`**: Updated system diagram and layer descriptions to include `graph_analyzer.py` and `/analyze`.
+
+### Test Results
+
+| Test Suite | Tests Passed | Tests Skipped | Tests Failed |
+| :--- | :--- | :--- | :--- |
+| `tests/test_api_baseline.py` | 8 | 0 | 0 |
+| `tests/test_pagerank_baseline.py` | 6 | 2 (expected) | 0 |
+| `tests/test_pagerank_correctness.py` | 36 | 0 | 0 |
+| `tests/test_graph_edge_cases.py` | 48 | 0 | 0 |
+| `tests/test_graph_analysis.py` | 14 | 0 | 0 |
+| **Total** | **112** | **2** | **0** |
+
+---
+
+## STEP 5 — COMPLETE
+
+Date: 2026-09-22
+
+Verified:
+* Deterministic graph structural analysis layer established in `backend/graph_analyzer.py`
+* All 10 structural properties computed accurately and deterministically
+* Reuses Step 4 `graph_validator.py` as source of truth for graph validity
+* 14 comprehensive tests added in `tests/test_graph_analysis.py` (112 total tests pass)
+* `POST /analyze` API endpoint added and verified
+* `docs/graph-analysis.md` created, `docs/architecture.md` and `docs/research-log.md` updated
+* No PageRank algorithm changes, no crawler modifications, no frontend redesign, no Step 6 work started
+
+
 

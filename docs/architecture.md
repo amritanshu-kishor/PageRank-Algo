@@ -12,22 +12,25 @@ Browser User Interface
          ▼
 frontend/script.js (Cytoscape.js & DOM Event Handler)
          │
-         ├───────────────────────────────┐
-         │ HTTP POST /calculate          │ HTTP POST /crawl
-         ▼                               ▼
+         ├───────────────────────────────┬───────────────────────────────┐
+         │ HTTP POST /calculate          │ HTTP POST /analyze            │ HTTP POST /crawl
+         ▼                               ▼                               ▼
 Flask API Server (backend/app.py - Port 5000)
+         │                               │                               │
+         │                               │                               ▼
+         │                               │                       backend/crawler.py (Requests / BS4)
+         │                               │                               │
+         ▼                               ▼                               ▼
+backend/graph_validator.py (Input Validation & Normalization Boundary)
          │                               │
-         │                               ▼
-         │                       backend/crawler.py (Requests / BS4)
+         ├───────────────────────────────┘
+         │
+         ├───────────────────────────────┐
+         ▼                               ▼
+backend/pagerank.py (Power Solver)     backend/graph_analyzer.py (Structural Analysis)
          │                               │
          ▼                               ▼
-backend/graph_validator.py (Input Validation & Normalization Boundary)
-         │
-         ▼
-backend/pagerank.py (Iterative Power Method Solver)
-         │
-         ▼
-HTTP Response JSON (Sorted PageRank Scores / Discovered Graph)
+HTTP Response JSON (PageRank Scores / Structural Summary / Discovered Graph)
          │
          ▼
 frontend/script.js (Cytoscape Graph Animation & UI Rendering)
@@ -72,6 +75,13 @@ frontend/script.js (Cytoscape Graph Animation & UI Rendering)
     $$PR(i) = \frac{1-d}{N} + d \left[ \frac{\sum_{k \in \text{dangling}} PR(k)}{N} + \sum_{j \to i} \frac{PR(j)}{C(j)} \right]$$
   - Enforces L1-norm convergence check ($\sum |PR_{new}(i) - PR_{old}(i)| < \text{tol}$) or stops at `max_iterations`.
   - Preserves exact total rank mass conservation ($\sum PR(i) = 1.0$) throughout power iteration without relying on post-hoc normalization.
+
+### 2.6 Graph Analysis Layer (`backend/graph_analyzer.py`)
+- **Technology**: Pure Python graph analysis algorithms (BFS for WCC, Tarjan's algorithm for SCC).
+- **Responsibility**:
+  - Computes structural graph metrics (`node_count`, `edge_count`, `density`, `in_degree`, `out_degree`, `dangling_node_count`, `isolated_node_count`).
+  - Computes Weakly Connected Components (WCC) and Strongly Connected Components (SCC) deterministically.
+  - Generates consolidated structural graph summary JSON object.
 
 ---
 

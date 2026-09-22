@@ -5,6 +5,7 @@ from flask_cors import CORS
 from crawler import crawl_site
 from pagerank import calculate_pagerank
 from graph_validator import validate_graph, validate_pagerank_params
+from graph_analyzer import analyze_graph
 
 app = Flask(__name__)
 
@@ -42,6 +43,22 @@ def calculate():
         
         return jsonify(sorted_scores), 200
         
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/analyze', methods=['POST'])
+def analyze():
+    try:
+        data = request.get_json()
+
+        if not isinstance(data, dict) or 'pages' not in data or 'links' not in data:
+            return jsonify({'error': 'Invalid input format. Expected pages and links.'}), 400
+
+        summary = analyze_graph(data['pages'], data['links'])
+        return jsonify(summary), 200
+
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:
