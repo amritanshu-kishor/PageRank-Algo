@@ -6,6 +6,7 @@ from crawler import crawl_site
 from pagerank import calculate_pagerank
 from graph_validator import validate_graph, validate_pagerank_params
 from graph_analyzer import analyze_graph
+from ranking_comparator import compare_rankings
 
 app = Flask(__name__)
 
@@ -101,6 +102,25 @@ def crawl():
                 'max_pages': crawl_res.get('max_pages')
             }
         }), 200
+
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/compare', methods=['POST'])
+def compare():
+    try:
+        data = request.get_json()
+        if not isinstance(data, dict) or 'ranking_a' not in data or 'ranking_b' not in data:
+            return jsonify({'error': 'Invalid input format. Expected ranking_a and ranking_b.'}), 400
+
+        top_k = data.get('top_k')
+        if top_k is not None and not isinstance(top_k, list):
+            return jsonify({'error': "'top_k' must be a list of integers if provided."}), 400
+
+        res = compare_rankings(data['ranking_a'], data['ranking_b'], top_k=top_k)
+        return jsonify(res), 200
 
     except ValueError as e:
         return jsonify({'error': str(e)}), 400

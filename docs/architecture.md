@@ -6,18 +6,19 @@ This document details the baseline architecture of the PageRank-Algo application
 
 ## 1. System Architecture Diagram
 
-```text
 Browser User Interface
          │
          ▼
 frontend/script.js (Cytoscape.js & DOM Event Handler)
          │
-         ├───────────────────────────────┬───────────────────────────────┐
-         │ HTTP POST /calculate          │ HTTP POST /analyze            │ HTTP POST /crawl
-         ▼                               ▼                               ▼
+         ├───────────────────────────────┬───────────────────────────────┬───────────────────────────────┐
+         │ HTTP POST /calculate          │ HTTP POST /analyze            │ HTTP POST /crawl              │ HTTP POST /compare
+         ▼                               ▼                               ▼                               ▼
 Flask API Server (backend/app.py - Port 5000)
-         │                               │                               │
-         │                               │                               ▼
+         │                               │                               │                               │
+         │                               │                               │                               ▼
+         │                               │                               │                     backend/ranking_comparator.py
+         │                               │                               ▼                               (Ranking Comparison Layer)
          │                               │                     backend/crawler.py (Hardened BFS Crawler)
          │                               │                               │
          ▼                               ▼                               ▼
@@ -86,6 +87,13 @@ frontend/script.js (Cytoscape Graph Animation & UI Rendering)
   - Computes Weakly Connected Components (WCC) and Strongly Connected Components (SCC) deterministically.
   - Generates consolidated structural graph summary JSON object.
 
+### 2.7 Ranking Comparison Layer (`backend/ranking_comparator.py`)
+- **Technology**: Pure Python mathematical comparison utilities.
+- **Responsibility**:
+  - Validates ranking vectors (rejects malformed types, non-numeric values, NaN/inf, and node set mismatches).
+  - Aligns ranking vectors onto a deterministic lexicographical node order.
+  - Computes L1 distance, L2 distance, Cosine similarity (with zero-vector safety), Spearman rank correlation (with fractional average rank tie handling), Kendall tau-b correlation (handling ties), Top-k overlap (with deterministic tie-breaking), and rank displacement statistics (max, mean, per-node).
+
 ---
 
 ## 3. Detailed Request / Response Flows
@@ -130,3 +138,20 @@ frontend/script.js (Cytoscape Graph Animation & UI Rendering)
    }
    ```
 7. **UI Update**: `script.js` clears existing graph, populates newly crawled nodes and edges, applies `cose` layout, displays crawl summary message, and renders ranking results.
+
+### 3.3 Ranking Comparison Flow (`POST /compare`)
+
+1. **Client Request**: Client sends `POST http://127.0.0.1:5000/compare` with JSON body:
+   ```json
+   {
+     "ranking_a": {"A": 0.4, "B": 0.3, "C": 0.3},
+     "ranking_b": {"A": 0.5, "B": 0.3, "C": 0.2},
+     "top_k": [1, 2, 3]
+   }
+   ```
+2. **Flask Handler**: `compare()` in `app.py` validates presence of `ranking_a` and `ranking_b`.
+3. **Execution**: Invokes `compare_rankings()` in `ranking_comparator.py`.
+4. **Validation & Alignment**: Validates node IDs and score numerics; aligns node ordering lexicographically.
+5. **Metric Calculation**: Calculates L1/L2 distance, cosine similarity, Spearman correlation, Kendall tau-b, top-k overlap, and rank displacement statistics.
+6. **HTTP Response**: Returns `200 OK` with JSON containing all mathematical metrics, or `400 Bad Request` if vector validation fails.
+

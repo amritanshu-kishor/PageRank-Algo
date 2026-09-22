@@ -493,6 +493,70 @@ Verified:
 * `docs/pipeline-integration.md` created, `docs/architecture.md` and `docs/research-log.md` updated
 * No PageRank algorithm changes, no frontend redesign, no Step 8 work started
 
+---
+
+## Phase 1 — Step 8: Ranking Comparison Layer
+
+### Date: 2026-09-22
+
+### Objective
+Establish an independent, reusable **Ranking Comparison Layer** (`backend/ranking_comparator.py`) to calculate objective mathematical comparison metrics between ranking vectors over the same node set.
+
+### Contract & Invariants
+1. **Independence**: Operates independently of the PageRank engine without modifying input ranking vectors or making evaluative superiority claims.
+2. **Strict Validation**: Validates dictionary structure, node ID strings, finite numerical scores, and exact node set matching ($V_A = V_B$).
+3. **Common Node Alignment**: Aligns score vectors onto a deterministic lexicographical node ordering.
+4. **Mathematical Metrics Implemented**:
+   - L1 Distance ($\sum |A_i - B_i|$)
+   - L2 Distance ($\sqrt{\sum (A_i - B_i)^2}$)
+   - Cosine Similarity ($\frac{A \cdot B}{\|A\| \|B\|}$, returning 1.0 for double-zero vectors and 0.0 for single-zero vectors)
+   - Spearman Rank Correlation ($\rho$, using fractional average ranks for ties)
+   - Kendall Tau-b Rank Correlation ($\tau_b$, explicitly accounting for ties)
+   - Top-K Overlap ($\frac{|\text{TopK}(A) \cap \text{TopK}(B)|}{k}$, using score desc then node ID asc tie-breaking)
+   - Rank Displacement Statistics (max displacement, mean displacement, per-node displacement)
+5. **API Integration**: Exposes `POST /compare` endpoint in `backend/app.py` returning structured JSON metrics.
+
+### Artifacts Created / Modified
+- **`backend/ranking_comparator.py`**: Implementation of vector validation, alignment, and 10 comparison metrics.
+- **`backend/app.py`**: Integrated `POST /compare` route handler.
+- **`tests/test_ranking_comparator.py`**: Created 24 unit & API integration tests covering validation, distance metrics, cosine safety, Spearman/Kendall tie handling, top-k overlap tie-breaking, rank displacements, and HTTP endpoint responses.
+- **`docs/ranking-comparison.md`**: Formal specification of the ranking comparison contract and metric formulas.
+- **`docs/architecture.md`**: Updated architecture diagram and component specifications.
+
+### Test Execution Matrix (3 Consecutive Runs)
+
+| Test Suite | Run 1 | Run 2 | Run 3 |
+| :--- | :--- | :--- | :--- |
+| `tests/test_api_baseline.py` | 8 Passed | 8 Passed | 8 Passed |
+| `tests/test_pagerank_baseline.py` | 6 Passed, 2 Skipped | 6 Passed, 2 Skipped | 6 Passed, 2 Skipped |
+| `tests/test_pagerank_correctness.py` | 36 Passed | 36 Passed | 36 Passed |
+| `tests/test_graph_edge_cases.py` | 48 Passed | 48 Passed | 48 Passed |
+| `tests/test_graph_analysis.py` | 14 Passed | 14 Passed | 14 Passed |
+| `tests/test_crawler.py` | 25 Passed | 25 Passed | 25 Passed |
+| `tests/test_crawler_pagerank_integration.py` | 11 Passed | 11 Passed | 11 Passed |
+| `tests/test_ranking_comparator.py` | 24 Passed | 24 Passed | 24 Passed |
+| **Total** | **172 Passed, 2 Skipped** | **172 Passed, 2 Skipped** | **172 Passed, 2 Skipped** |
+
+---
+
+## STEP 8 — COMPLETE
+
+Date: 2026-09-22
+
+Verified:
+* Ranking comparison layer (`backend/ranking_comparator.py`) implemented independently of PageRank solver
+* All 10 required mathematical comparison capabilities fully implemented and tested
+* Ranking vector validation and common-node alignment strictly enforced
+* Spearman and Kendall tau-b tie-handling policies documented and tested
+* Cosine similarity zero-vector handling policies documented and tested
+* Deterministic tie-breaking established for Top-K overlap and rank displacements
+* `POST /compare` API endpoint exposed in `backend/app.py`
+* 24 dedicated unit and integration tests added in `tests/test_ranking_comparator.py`
+* All 172 non-skipped tests pass consistently across 3 consecutive clean runs
+* `docs/ranking-comparison.md` created, `docs/architecture.md` and `docs/research-log.md` updated
+* No evaluative claims made, no PageRank algorithm changes, no frontend redesign, no Step 9 work started
+
+
 
 
 
