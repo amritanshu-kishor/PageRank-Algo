@@ -14,9 +14,10 @@ Before comparing any two ranking vectors, both vectors are independently validat
 
 ### Validation Rules:
 1. **Structure**: Input must be a dictionary (`dict[str, float]`).
-2. **Node Identifiers**: Keys must be non-empty strings (`str`).
-3. **Numeric Scores**: Values must be finite real numbers (`int` or `float`). Boolean values (`True`/`False`), strings, `None`, `NaN`, and `infinity` (`inf`/`-inf`) are rejected with `ValueError`.
-4. **Node Coverage**: Both ranking vectors must refer to the exact same node set ($V_A = V_B$). Mismatched sets raise a `ValueError` with detailed diff diagnostics.
+2. **Non-Empty**: The ranking dictionary must contain at least one node. An empty `{}` ranking has no comparable nodes and is rejected with `ValueError`.
+3. **Node Identifiers**: Keys must be non-empty strings (`str`).
+4. **Numeric Scores**: Values must be finite real numbers (`int` or `float`). Boolean values (`True`/`False`), strings, `None`, `NaN`, and `infinity` (`inf`/`-inf`) are rejected with `ValueError`.
+5. **Node Coverage**: Both ranking vectors must refer to the exact same node set ($V_A = V_B$). Mismatched sets raise a `ValueError` with detailed diff diagnostics.
 
 ---
 
@@ -94,7 +95,19 @@ $$\text{TopKOverlap}(k) = \frac{|\text{TopK}(A) \cap \text{TopK}(B)|}{k}$$
 * **Deterministic Tie-Breaking**: When score ties occur, nodes are sorted by score descending, then by node ID ascending (lexicographical order).
 * **Domain**: $[0.0, 1.0]$ for $1 \le k \le N$.
 
----
+#### Top-K Input Validation Contract
+
+When the caller explicitly supplies a `top_k` list, the following rules are strictly enforced (violations raise `ValueError`):
+
+| Rule | Accepted | Rejected | Reason |
+| :--- | :--- | :--- | :--- |
+| **Type** | `list` | non-list | `top_k` must be a list |
+| **Non-empty** | `[1]`, `[1, 3]` | `[]` | An explicitly empty list has no comparison purpose; omit `top_k` to use defaults |
+| **Element type** | `int` | `float` (`1.5`), `str` (`"3"`), `bool` (`True`), `None` | Each element must be a plain integer |
+| **Range** | `1 ≤ k ≤ N` | `k = 0`, `k < 0`, `k > N` | k must index into the node list |
+| **No duplicates** | `[1, 2, 3]` | `[1, 1, 3]` | Each requested k must be distinct |
+
+**Default behaviour (when `top_k` is omitted / `None`)**: The default set `[1, 3, 5, 10]` is used, bounded by N. No validation error is raised because the default set is always constructed to be valid.
 
 ### Rank Displacement Statistics
 Measures absolute changes in node rank positions (1-indexed, 1 = highest score).
@@ -148,3 +161,20 @@ Measures absolute changes in node rank positions (1-indexed, 1 = highest score).
   "error": "Rankings must refer to the exact same node set. Nodes in ranking_a but missing in ranking_b: ['D']"
 }
 ```
+
+#### API Error Cases That Return HTTP 400
+
+| Input | Error Reason |
+| :--- | :--- |
+| `ranking_a: {}` | Empty ranking vector — at least one node required |
+| `ranking_b: {}` | Empty ranking vector — at least one node required |
+| `ranking_a` and `ranking_b` have different node sets | Node set mismatch |
+| Score is `NaN`, `inf`, boolean, string, or `None` | Invalid score type or value |
+| `top_k: []` | Empty `top_k` list — omit `top_k` to use defaults |
+| `top_k: [0]` | `k=0` is out of range; minimum is 1 |
+| `top_k: [-1]` | Negative k is out of range |
+| `top_k: [N+1]` | k exceeds node count N |
+| `top_k: ["1"]` | String element — must be a plain integer |
+| `top_k: [1.5]` | Float element — must be a plain integer |
+| `top_k: [True]` | Boolean element — must be a plain integer |
+| `top_k: [1, 1, 3]` | Duplicate k value — each k must be distinct |

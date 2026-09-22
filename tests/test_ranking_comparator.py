@@ -299,3 +299,219 @@ def test_api_compare_validation_error():
     data = response.get_json()
     assert "error" in data
     assert "exact same node set" in data["error"]
+
+
+# ===================================================================
+# STEP 8 VALIDATION REGRESSION TESTS
+# ===================================================================
+
+# -------------------------------------------------------------------
+# Issue 1: Empty Ranking Vector Rejection
+# -------------------------------------------------------------------
+
+def test_validate_ranking_vector_empty_both():
+    """Empty ranking_a must be rejected."""
+    with pytest.raises(ValueError, match="must not be empty"):
+        validate_ranking_vector({})
+
+
+def test_validate_ranking_vector_empty_ranking_a():
+    """Empty ranking_a must be rejected even when ranking_b is non-empty."""
+    with pytest.raises(ValueError, match="must not be empty"):
+        align_rankings({}, {"A": 1.0})
+
+
+def test_validate_ranking_vector_empty_ranking_b():
+    """Empty ranking_b must be rejected even when ranking_a is non-empty."""
+    with pytest.raises(ValueError, match="must not be empty"):
+        align_rankings({"A": 1.0}, {})
+
+
+def test_compare_rankings_empty_ranking_a_raises():
+    """compare_rankings must raise ValueError if ranking_a is empty."""
+    with pytest.raises(ValueError, match="must not be empty"):
+        compare_rankings({}, {"A": 1.0})
+
+
+def test_compare_rankings_empty_ranking_b_raises():
+    """compare_rankings must raise ValueError if ranking_b is empty."""
+    with pytest.raises(ValueError, match="must not be empty"):
+        compare_rankings({"A": 1.0}, {})
+
+
+def test_compare_rankings_both_empty_raises():
+    """compare_rankings must raise ValueError if both rankings are empty."""
+    with pytest.raises(ValueError, match="must not be empty"):
+        compare_rankings({}, {})
+
+
+# -------------------------------------------------------------------
+# Issue 2 & 3: Invalid top-k values must be explicitly rejected
+# -------------------------------------------------------------------
+
+def test_top_k_zero_rejected():
+    """k=0 must raise ValueError."""
+    r = {"A": 0.5, "B": 0.3, "C": 0.2}
+    with pytest.raises(ValueError, match="must be >= 1"):
+        compare_rankings(r, r, top_k=[0])
+
+
+def test_top_k_negative_rejected():
+    """k=-1 must raise ValueError."""
+    r = {"A": 0.5, "B": 0.3, "C": 0.2}
+    with pytest.raises(ValueError, match="must be >= 1"):
+        compare_rankings(r, r, top_k=[-1])
+
+
+def test_top_k_exceeds_n_rejected():
+    """k > N must raise ValueError."""
+    r = {"A": 0.5, "B": 0.3}  # N=2
+    with pytest.raises(ValueError, match="exceeds the number of nodes"):
+        compare_rankings(r, r, top_k=[3])
+
+
+def test_top_k_string_rejected():
+    """A string element in top_k must raise ValueError."""
+    r = {"A": 0.5, "B": 0.3, "C": 0.2}
+    with pytest.raises(ValueError, match="must be a plain integer"):
+        compare_rankings(r, r, top_k=["3"])
+
+
+def test_top_k_float_rejected():
+    """A float element (e.g. 1.5) in top_k must raise ValueError."""
+    r = {"A": 0.5, "B": 0.3, "C": 0.2}
+    with pytest.raises(ValueError, match="must be a plain integer"):
+        compare_rankings(r, r, top_k=[1.5])
+
+
+def test_top_k_bool_rejected():
+    """Boolean True in top_k must raise ValueError (bool is a subclass of int)."""
+    r = {"A": 0.5, "B": 0.3, "C": 0.2}
+    with pytest.raises(ValueError, match="must be a plain integer"):
+        compare_rankings(r, r, top_k=[True])
+
+
+# -------------------------------------------------------------------
+# Issue 3: Empty top_k list must be rejected
+# -------------------------------------------------------------------
+
+def test_top_k_empty_list_rejected():
+    """top_k=[] must raise ValueError (no k values requested is meaningless)."""
+    r = {"A": 0.5, "B": 0.3, "C": 0.2}
+    with pytest.raises(ValueError, match="must not be an empty list"):
+        compare_rankings(r, r, top_k=[])
+
+
+# -------------------------------------------------------------------
+# Issue 4: Duplicate top-k values must be rejected
+# -------------------------------------------------------------------
+
+def test_top_k_duplicate_rejected():
+    """top_k=[1, 1, 3] must raise ValueError due to duplicate k=1."""
+    r = {"A": 0.5, "B": 0.3, "C": 0.2}
+    with pytest.raises(ValueError, match="duplicate value"):
+        compare_rankings(r, r, top_k=[1, 1, 3])
+
+
+def test_top_k_duplicate_at_end_rejected():
+    """top_k=[1, 2, 2] must raise ValueError due to duplicate k=2."""
+    r = {"A": 0.5, "B": 0.3, "C": 0.2}
+    with pytest.raises(ValueError, match="duplicate value"):
+        compare_rankings(r, r, top_k=[1, 2, 2])
+
+
+# -------------------------------------------------------------------
+# Valid boundary values: k=1 and k=N must succeed
+# -------------------------------------------------------------------
+
+def test_top_k_boundary_k_equals_1():
+    """k=1 (minimum valid value) must succeed."""
+    r = {"A": 0.5, "B": 0.3, "C": 0.2}
+    result = compare_rankings(r, r, top_k=[1])
+    assert 1 in result["top_k_overlap"]
+    assert result["top_k_overlap"][1] == 1.0
+
+
+def test_top_k_boundary_k_equals_n():
+    """k=N (maximum valid value) must succeed."""
+    r = {"A": 0.5, "B": 0.3, "C": 0.2}  # N=3
+    result = compare_rankings(r, r, top_k=[3])
+    assert 3 in result["top_k_overlap"]
+    assert result["top_k_overlap"][3] == 1.0
+
+
+def test_top_k_k1_and_kN_together():
+    """k=1 and k=N together must succeed."""
+    r = {"A": 0.5, "B": 0.3, "C": 0.2}  # N=3
+    result = compare_rankings(r, r, top_k=[1, 3])
+    assert result["top_k_overlap"][1] == 1.0
+    assert result["top_k_overlap"][3] == 1.0
+
+
+# -------------------------------------------------------------------
+# API regression: invalid top_k values return HTTP 400
+# -------------------------------------------------------------------
+
+def test_api_compare_top_k_zero_returns_400():
+    """API must return 400 for k=0."""
+    client = app.test_client()
+    payload = {
+        "ranking_a": {"A": 0.5, "B": 0.3, "C": 0.2},
+        "ranking_b": {"A": 0.4, "B": 0.4, "C": 0.2},
+        "top_k": [0],
+    }
+    response = client.post("/compare", json=payload)
+    assert response.status_code == 400
+    assert "error" in response.get_json()
+
+
+def test_api_compare_top_k_exceeds_n_returns_400():
+    """API must return 400 when k > N."""
+    client = app.test_client()
+    payload = {
+        "ranking_a": {"A": 0.5, "B": 0.5},
+        "ranking_b": {"A": 0.4, "B": 0.6},
+        "top_k": [5],  # N=2, k=5 is invalid
+    }
+    response = client.post("/compare", json=payload)
+    assert response.status_code == 400
+    assert "error" in response.get_json()
+
+
+def test_api_compare_empty_top_k_returns_400():
+    """API must return 400 for top_k=[]."""
+    client = app.test_client()
+    payload = {
+        "ranking_a": {"A": 0.5, "B": 0.5},
+        "ranking_b": {"A": 0.4, "B": 0.6},
+        "top_k": [],
+    }
+    response = client.post("/compare", json=payload)
+    assert response.status_code == 400
+    assert "error" in response.get_json()
+
+
+def test_api_compare_duplicate_top_k_returns_400():
+    """API must return 400 for duplicate k values."""
+    client = app.test_client()
+    payload = {
+        "ranking_a": {"A": 0.5, "B": 0.3, "C": 0.2},
+        "ranking_b": {"A": 0.4, "B": 0.4, "C": 0.2},
+        "top_k": [1, 1, 2],
+    }
+    response = client.post("/compare", json=payload)
+    assert response.status_code == 400
+    assert "error" in response.get_json()
+
+
+def test_api_compare_empty_ranking_returns_400():
+    """API must return 400 when ranking_a is empty."""
+    client = app.test_client()
+    payload = {
+        "ranking_a": {},
+        "ranking_b": {"A": 1.0},
+    }
+    response = client.post("/compare", json=payload)
+    assert response.status_code == 400
+    assert "error" in response.get_json()
+

@@ -25,7 +25,7 @@ def validate_ranking_vector(ranking, name="ranking"):
 
     Rules:
     - Must be a dictionary.
-    - Cannot be empty (if required for comparison).
+    - Cannot be empty; an empty ranking has no comparable nodes.
     - Keys must be non-empty strings (node identifiers).
     - Values must be finite numbers (int or float, not bool, not NaN, not inf).
 
@@ -36,6 +36,9 @@ def validate_ranking_vector(ranking, name="ranking"):
     """
     if not isinstance(ranking, dict):
         raise ValueError(f"'{name}' must be a dictionary mapping node ID -> score, got {type(ranking).__name__}.")
+
+    if len(ranking) == 0:
+        raise ValueError(f"'{name}' must not be empty. A ranking vector must contain at least one node.")
 
     validated = {}
     for node, score in ranking.items():
@@ -207,6 +210,56 @@ def calculate_kendall_tau(vec_a, vec_b):
     return float(max(-1.0, min(1.0, tau_b)))
 
 
+def validate_top_k(k_values, N):
+    """
+    Validate a list of top-k values against the node count N.
+
+    Policy:
+    - k_values must be a non-empty list.
+    - Each element must be a plain integer (bool is rejected).
+    - Each k must satisfy 1 <= k <= N.
+    - Duplicate k values are rejected; each requested k must be distinct.
+
+    :param k_values: List of candidate k values supplied by the caller.
+    :param N: Total number of aligned nodes.
+    :raises ValueError: On any invalid element, out-of-range value, or duplicate.
+    """
+    if not isinstance(k_values, list):
+        raise ValueError(f"'top_k' must be a list, got {type(k_values).__name__}.")
+
+    if len(k_values) == 0:
+        raise ValueError(
+            "'top_k' must not be an empty list. "
+            "Provide at least one k value, or omit 'top_k' to use defaults."
+        )
+
+    seen = set()
+    for idx, k in enumerate(k_values):
+        # Booleans are int subclasses; reject them explicitly.
+        if isinstance(k, bool):
+            raise ValueError(
+                f"'top_k[{idx}]' must be a plain integer, got bool: {k!r}."
+            )
+        if not isinstance(k, int):
+            raise ValueError(
+                f"'top_k[{idx}]' must be a plain integer, got {type(k).__name__}: {k!r}."
+            )
+        if k < 1:
+            raise ValueError(
+                f"'top_k[{idx}]' must be >= 1 (got {k}). k must be a positive integer."
+            )
+        if k > N:
+            raise ValueError(
+                f"'top_k[{idx}]' value {k} exceeds the number of nodes N={N}. "
+                f"k must satisfy 1 <= k <= N."
+            )
+        if k in seen:
+            raise ValueError(
+                f"'top_k' contains duplicate value {k}. Each k must be distinct."
+            )
+        seen.add(k)
+
+
 def calculate_top_k_overlap(nodes, vec_a, vec_b, k_values=None):
     """
     Calculate Top-K overlap ratio for specified k values.
@@ -217,26 +270,34 @@ def calculate_top_k_overlap(nodes, vec_a, vec_b, k_values=None):
     :param nodes: List of aligned node IDs.
     :param vec_a: Score vector A.
     :param vec_b: Score vector B.
-    :param k_values: List of int k values (or None for default [1, 3, 5, 10] bounded by N).
+    :param k_values: List of distinct positive int k values in [1, N], or None for
+                     the default set [1, 3, 5, 10] (bounded by N). When explicitly
+                     supplied, each element is strictly validated: booleans, floats,
+                     strings, out-of-range integers, empty list, and duplicates are
+                     all rejected with ValueError.
     :return: dict mapping k -> overlap ratio (float in [0.0, 1.0]).
+    :raises ValueError: If k_values is explicitly supplied and fails validation.
     """
     N = len(nodes)
     if N == 0:
         return {}
 
     if k_values is None:
-        k_values = [k for k in [1, 3, 5, 10] if k <= N]
-        if not k_values and N > 0:
-            k_values = [N]
+        # Default set: use whichever of [1, 3, 5, 10] fit within N.
+        resolved = [k for k in [1, 3, 5, 10] if k <= N]
+        if not resolved:
+            resolved = [N]
     else:
-        k_values = [k for k in k_values if 1 <= k <= N]
+        # Explicit caller-supplied list — validate strictly.
+        validate_top_k(k_values, N)
+        resolved = k_values
 
     # Deterministic sorting for ranking A (score desc, node ID asc)
     nodes_a_sorted = [node for node, score in sorted(zip(nodes, vec_a), key=lambda x: (-x[1], x[0]))]
     nodes_b_sorted = [node for node, score in sorted(zip(nodes, vec_b), key=lambda x: (-x[1], x[0]))]
 
     overlap_results = {}
-    for k in k_values:
+    for k in resolved:
         set_a_k = set(nodes_a_sorted[:k])
         set_b_k = set(nodes_b_sorted[:k])
         intersection = set_a_k.intersection(set_b_k)

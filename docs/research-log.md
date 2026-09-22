@@ -556,6 +556,35 @@ Verified:
 * `docs/ranking-comparison.md` created, `docs/architecture.md` and `docs/research-log.md` updated
 * No evaluative claims made, no PageRank algorithm changes, no frontend redesign, no Step 9 work started
 
+---
+
+## Phase 1 — Step 8 Final Validation Correction
+
+### Date: 2026-09-22
+
+### Issues Fixed
+
+Four validation gaps identified during final gate review were corrected without changing any mathematical formulas:
+
+1. **Empty ranking rejection**: `validate_ranking_vector()` now rejects `{}` with a clear `ValueError` ("must not be empty").
+2. **Invalid top-k values explicitly rejected**: A new `validate_top_k()` helper is called when `top_k` is explicitly supplied. Booleans, floats, strings, `k < 1`, `k > N` all raise `ValueError`. Previously these were silently filtered out.
+3. **Empty top-k list explicitly rejected**: `top_k = []` raises `ValueError` ("must not be an empty list"). Previously it silently produced an empty result.
+4. **Duplicate top-k values explicitly rejected**: `top_k = [1, 1, 3]` raises `ValueError` ("duplicate value"). Previously duplicates were silently deduplicated.
+
+**Default behaviour (when `top_k=None`) is unchanged**: the default set `[1, 3, 5, 10]` bounded by N is still used.
+
+### Files Modified
+- `backend/ranking_comparator.py`: Added empty-dict check in `validate_ranking_vector`; extracted `validate_top_k` helper; replaced silent k-filter with strict validation in `calculate_top_k_overlap`.
+- `tests/test_ranking_comparator.py`: Added 23 regression tests covering all four issues plus valid boundary values (`k=1`, `k=N`).
+- `docs/ranking-comparison.md`: Updated Validation Rules (Rule 2: Non-Empty) and Top-K Overlap section (validation contract table, default behaviour note, API error table).
+
+### Test Execution Matrix (3 Consecutive Runs)
+
+| Test Suite | Run 1 | Run 2 | Run 3 |
+| :--- | :--- | :--- | :--- |
+| `tests/test_ranking_comparator.py` (dedicated) | 47 Passed | 47 Passed | 47 Passed |
+| **Full Suite** | **195 Passed, 2 Skipped** | **195 Passed, 2 Skipped** | **195 Passed, 2 Skipped** |
+
 
 
 
