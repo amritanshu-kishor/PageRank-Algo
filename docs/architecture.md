@@ -18,7 +18,7 @@ frontend/script.js (Cytoscape.js & DOM Event Handler)
 Flask API Server (backend/app.py - Port 5000)
          │                               │                               │
          │                               │                               ▼
-         │                               │                       backend/crawler.py (Requests / BS4)
+         │                               │                       backend/crawler.py (Hardened BFS Web Crawler)
          │                               │                               │
          ▼                               ▼                               ▼
 backend/graph_validator.py (Input Validation & Normalization Boundary)
@@ -64,9 +64,12 @@ frontend/script.js (Cytoscape Graph Animation & UI Rendering)
 ### 2.4 Crawler Layer (`backend/crawler.py`)
 - **Technology**: Python Requests 2.31.0, BeautifulSoup4 4.12.3, `urllib.parse`.
 - **Responsibility**:
-  - Performs same-domain Breadth-First Search (BFS) starting at a seed URL.
-  - Normalizes URLs, strips fragments, strips trailing slashes, and enforces same host domain filtering.
-  - Extracts hyperlink `<a>` tags and builds node list and directed edge list.
+  - Performs hardened, deterministic same-host Breadth-First Search (BFS) starting at a seed URL.
+  - Normalizes URLs (strips fragments, lowercases host, normalizes paths, preserves query strings).
+  - Enforces strict same-host boundary restrictions and rejects off-domain redirects.
+  - Filters non-HTML resources (via Content-Type check) and ignores non-HTTP schemes.
+  - Handles HTTP status errors (4xx/5xx) and timeouts gracefully without crashing.
+  - Returns a clean directed graph compatible with `graph_validator.py`.
 
 ### 2.5 Algorithmic Calculation Layer (`backend/pagerank.py`)
 - **Technology**: Pure Python iterative solver (no external graph libraries used for solver).

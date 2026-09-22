@@ -378,5 +378,68 @@ Verified:
 * `docs/graph-analysis.md` created, `docs/architecture.md` and `docs/research-log.md` updated
 * No PageRank algorithm changes, no crawler modifications, no frontend redesign, no Step 6 work started
 
+---
+
+## Phase 1 — Step 6: Crawler Hardening
+
+### Date: 2026-09-22
+
+### Objective
+Harden the existing web crawler (`backend/crawler.py`) so that it provides a technically reliable, reproducible, and deterministic same-host crawling layer with strict URL normalization, domain boundary security, failure resilience, and full compatibility with the Step 4 graph validator.
+
+### Original Crawler Inspection Findings & Defects Addressed
+
+| Area | Original Behavior / Defect | Hardened Behavior |
+| :--- | :--- | :--- |
+| **URL Normalization** | Basic `urldefrag` + trailing slash strip | Full `normalize_url`: strips fragments, lowercases host, handles scheme-relative `//host`, strips default ports (`:80`/`:443`), preserves query strings, rejects non-HTTP schemes (`mailto:`, `javascript:`, `tel:`, `data:`). |
+| **Domain Boundary** | Exact string comparison on `netloc` | Strict `is_same_host` checking effective host (ignoring default ports). Prevents off-domain crawling, sub-domain expansion, and malicious host suffixes like `example.com.evil.com`. |
+| **Redirects** | Followed redirects blindly without checking final host | Rejects redirect targets that lead off-domain (`response.url` must pass `is_same_host`). |
+| **Non-HTML Resources** | Checked `text/html` string | Checked `text/html` or `application/xhtml+xml`. Excludes images, PDFs, ZIPs, and non-HTML assets from crawl targets. |
+| **Failures & Timeouts** | Caught `RequestException`, but added failed pages to `visited` output | Catches `RequestException` & timeouts (`REQUEST_TIMEOUT = 8s`), records failed URLs in metadata (`pages_failed`), excludes non-HTML/4xx/5xx URLs from returned graph nodes. Fallback ensures single unresolvable seed URL returns seed node for baseline API compatibility. |
+| **Relative URLs** | `urljoin(base_url, href)` | Preserves exact response URL (including trailing directory slash) for resolving relative paths (`/about`, `../contact`, `./team`). |
+| **Determinism** | Standard BFS with set storage | Deterministic traversal order using DOM anchor sequence, queue FIFO, and lexicographically sorted `pages` and `links` arrays. |
+| **Graph Contract Compatibility** | Basic edge filtering | 100% compatible with `graph_validator.py`. Verified via unit tests passing crawler output to `validate_graph`. |
+
+### Artifacts Created / Modified
+
+- **`backend/crawler.py`**: Hardened URL normalization, domain boundary checks, redirect handling, non-HTML filtering, and metadata reporting while preserving `fetch_html` for baseline compatibility.
+- **`tests/test_crawler.py`**: Created 25 unit and integration tests using mocked HTTP responses (0 external live network dependencies).
+- **`docs/crawler.md`**: Created formal documentation for web crawler specifications and contracts.
+- **`docs/architecture.md`**: Updated data flow diagram and crawler component description.
+
+### Test Execution Matrix (3 Consecutive Runs)
+
+| Test Suite | Run 1 | Run 2 | Run 3 |
+| :--- | :--- | :--- | :--- |
+| `tests/test_api_baseline.py` | 8 Passed | 8 Passed | 8 Passed |
+| `tests/test_pagerank_baseline.py` | 6 Passed, 2 Skipped | 6 Passed, 2 Skipped | 6 Passed, 2 Skipped |
+| `tests/test_pagerank_correctness.py` | 36 Passed | 36 Passed | 36 Passed |
+| `tests/test_graph_edge_cases.py` | 48 Passed | 48 Passed | 48 Passed |
+| `tests/test_graph_analysis.py` | 14 Passed | 14 Passed | 14 Passed |
+| `tests/test_crawler.py` | 25 Passed | 25 Passed | 25 Passed |
+| **Total** | **137 Passed, 2 Skipped** | **137 Passed, 2 Skipped** | **137 Passed, 2 Skipped** |
+
+---
+
+## STEP 6 — COMPLETE
+
+Date: 2026-09-22
+
+Verified:
+* Existing crawler inspected and documented before modification
+* URL normalization canonicalized and tested (`normalize_url`)
+* Fragment, relative URL, scheme, default port, and query string policies implemented and tested
+* Host/domain boundary strictly enforced (`is_same_host`), rejecting malicious sub-domains and off-domain redirects
+* Non-HTML resources (`image/png`, `application/pdf`, `application/zip`) excluded via Content-Type checking
+* HTTP status errors (4xx, 5xx) and timeouts handled gracefully without crashing crawl loop
+* Page limit (`max_pages`) strictly enforced without off-by-one errors
+* Crawl ordering is deterministic for deterministic input
+* Crawler output directly satisfies Step 4 `graph_validator.py`
+* 25 dedicated mock crawler tests added in `tests/test_crawler.py` (0 live internet dependencies)
+* All 137 non-skipped tests pass consistently across 3 consecutive runs
+* `docs/crawler.md` created, `docs/architecture.md` and `docs/research-log.md` updated
+* No PageRank algorithm changes, no crawler improvements beyond scope, no frontend redesign, no Step 7 work started
+
+
 
 
