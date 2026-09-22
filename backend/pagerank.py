@@ -106,3 +106,97 @@ def calculate_pagerank(pages, links, damping=0.85, max_iterations=100, tol=1.0e-
             break
 
     return rank
+
+
+def calculate_pagerank_detailed(pages, links, damping=0.85, max_iterations=100, tol=1.0e-6):
+    """
+    Extended PageRank computation that exposes execution metadata alongside the ranking.
+
+    Identical to calculate_pagerank() in every mathematical respect.
+    Added solely to expose measurements required by the experiment framework:
+      - actual iteration count performed
+      - convergence status (True = converged within tol, False = max_iterations reached)
+      - final L1 convergence error at termination
+
+    :param pages: List of page names (nodes).
+    :param links: List of directed edges [[source, target], ...].
+    :param damping: Damping factor d in (0, 1). Default 0.85.
+    :param max_iterations: Maximum power iteration steps. Default 100.
+    :param tol: L1 convergence tolerance. Default 1e-6.
+    :return: dict with keys:
+        - 'ranking'   (dict[str, float])  page -> PageRank score
+        - 'iterations' (int)              number of iterations performed
+        - 'converged'  (bool)             True if error < tol before max_iterations
+        - 'final_error' (float)           last L1 error computed (0.0 for empty graph)
+    :raises ValueError: If any parameter is invalid.
+    """
+    import math
+    if not isinstance(damping, (int, float)) or math.isnan(damping) or math.isinf(damping):
+        raise ValueError(f"damping must be a finite number, got {damping!r}")
+    if not (0.0 < damping < 1.0):
+        raise ValueError(f"damping must be strictly between 0 and 1, got {damping}")
+    if not isinstance(tol, (int, float)) or math.isnan(tol) or math.isinf(tol) or tol <= 0:
+        raise ValueError(f"tol must be a positive finite number, got {tol!r}")
+    if not isinstance(max_iterations, int) or isinstance(max_iterations, bool) or max_iterations < 1:
+        raise ValueError(f"max_iterations must be an integer >= 1, got {max_iterations!r}")
+
+    seen = set()
+    nodes = []
+    for page in pages:
+        if page not in seen:
+            nodes.append(page)
+            seen.add(page)
+
+    N = len(nodes)
+    if N == 0:
+        return {"ranking": {}, "iterations": 0, "converged": True, "final_error": 0.0}
+
+    node_set = seen
+
+    valid_edges = set()
+    for edge in links:
+        source, target = edge[0], edge[1]
+        if source in node_set and target in node_set:
+            valid_edges.add((source, target))
+    valid_edges = sorted(valid_edges)
+
+    outgoing_links = {node: 0 for node in nodes}
+    for source, target in valid_edges:
+        outgoing_links[source] += 1
+
+    dangling_nodes = [node for node in nodes if outgoing_links[node] == 0]
+
+    incoming = {node: [] for node in nodes}
+    for source, target in valid_edges:
+        incoming[target].append((source, outgoing_links[source]))
+
+    rank = {node: 1.0 / N for node in nodes}
+
+    converged = False
+    iterations_performed = 0
+    final_error = 0.0
+
+    for iteration in range(max_iterations):
+        iterations_performed = iteration + 1
+        dangling_rank = sum(rank[node] for node in dangling_nodes)
+
+        new_rank = {}
+        for node in nodes:
+            base = (1.0 - damping) / N + damping * (dangling_rank / N)
+            incoming_sum = sum(rank[src] / out_deg for src, out_deg in incoming[node])
+            new_rank[node] = base + damping * incoming_sum
+
+        final_error = sum(abs(new_rank[node] - rank[node]) for node in nodes)
+        rank = new_rank
+
+        if final_error < tol:
+            converged = True
+            break
+
+    return {
+        "ranking": rank,
+        "iterations": iterations_performed,
+        "converged": converged,
+        "final_error": final_error,
+    }
+

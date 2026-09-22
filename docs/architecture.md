@@ -94,6 +94,15 @@ frontend/script.js (Cytoscape Graph Animation & UI Rendering)
   - Aligns ranking vectors onto a deterministic lexicographical node order.
   - Computes L1 distance, L2 distance, Cosine similarity (with zero-vector safety), Spearman rank correlation (with fractional average rank tie handling), Kendall tau-b correlation (handling ties), Top-k overlap (with deterministic tie-breaking), and rank displacement statistics (max, mean, per-node).
 
+### 2.8 Experiment & Measurement Layer (`experiments/`)
+- **Technology**: Pure Python experiment framework (`datasets.py`, `config.py`, `runner.py`).
+- **Responsibility**:
+  - Maintains controlled, static test datasets (`DATASET_A` through `DATASET_G`) and scalable graph generators (`generate_chain`, `generate_cycle`, `generate_star`).
+  - Provides detailed execution instrumentation via `calculate_pagerank_detailed()` in `backend/pagerank.py` returning iteration counts, convergence booleans, and final L1 errors.
+  - Supports single experiment runs (`run_experiment`), repeated stability runs (`run_repeated_experiment`), and parameter sweeps (`run_damping_sweep`, `run_tolerance_sweep`, `run_max_iterations_sweep`, `run_scalability_sweep`).
+  - Integrates with Step 8 ranking comparison infrastructure for rank stability analysis against baseline parameters.
+  - Serializes experiment results to machine-readable JSON files via `save_experiment_results()`.
+
 ---
 
 ## 3. Detailed Request / Response Flows
@@ -154,4 +163,3 @@ frontend/script.js (Cytoscape Graph Animation & UI Rendering)
 4. **Validation & Alignment**: Validates node IDs and score numerics; aligns node ordering lexicographically.
 5. **Metric Calculation**: Calculates L1/L2 distance, cosine similarity, Spearman correlation, Kendall tau-b, top-k overlap, and rank displacement statistics.
 6. **HTTP Response**: Returns `200 OK` with JSON containing all mathematical metrics, or `400 Bad Request` if vector validation fails.
-

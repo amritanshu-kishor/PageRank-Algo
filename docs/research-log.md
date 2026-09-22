@@ -585,8 +585,51 @@ Four validation gaps identified during final gate review were corrected without 
 | `tests/test_ranking_comparator.py` (dedicated) | 47 Passed | 47 Passed | 47 Passed |
 | **Full Suite** | **195 Passed, 2 Skipped** | **195 Passed, 2 Skipped** | **195 Passed, 2 Skipped** |
 
+---
 
+## Phase 1 — Step 9: Experiment & Measurement Layer
 
+### Date: 2026-09-23
 
+### Objective
+Build a reusable, reproducible **Experiment & Measurement Layer** (`experiments/`) to measure PageRank behavior on directed graphs without claiming evaluative or research conclusions.
 
+### Implementation Summary
+1. **Static Controlled Datasets Catalog (`experiments/datasets.py`)**:
+   - Defined 7 static controlled datasets (`DATASET_A` through `DATASET_G`) covering chain, cycle, dangling, disconnected, hub, star, and mixed topologies.
+   - All datasets are validated against the Step 4 graph contract (`validate_graph`).
+   - Built 3 deterministic scalable graph generators: `generate_chain(n)`, `generate_cycle(n)`, and `generate_star(n)`.
+2. **PageRank Detailed Instrumentation (`backend/pagerank.py`)**:
+   - Implemented `calculate_pagerank_detailed()` companion function exposing actual iteration count, convergence status (`bool`), and final L1 error without altering original core solver math.
+3. **Configuration & Validation Model (`experiments/config.py`)**:
+   - Added catalog lookup (`get_catalog_dataset`), experiment config validation (`validate_experiment_config`), and sweep configuration validation (`validate_sweep_config`).
+4. **Experiment Execution Engine (`experiments/runner.py`)**:
+   - `run_experiment`: Single experiment run with structural graph analysis and timing.
+   - `run_repeated_experiment`: Multi-run execution for runtime mean, min, max, and stddev statistics.
+   - `run_damping_sweep`: Damping parameter sweep ($d \in (0, 1)$) with rank stability evaluation against baseline using Step 8 ranking comparison metrics.
+   - `run_tolerance_sweep`: Convergence threshold sweep ($tol > 0$).
+   - `run_max_iterations_sweep`: Iteration limit sweep to evaluate non-convergence progression.
+   - `run_scalability_sweep`: Benchmark graph scale vs execution runtime and structural density.
+   - `save_experiment_results`: Machine-readable JSON result export.
+5. **Specification & Documentation**:
+   - Created `docs/experiments.md` detailing dataset catalog, API interfaces, and JSON schema.
+   - Updated `docs/architecture.md` to document Layer 2.8 (Experiment & Measurement Layer).
 
+### Test Execution Matrix (3 Consecutive Runs)
+
+| Test Suite | Run 1 | Run 2 | Run 3 |
+| :--- | :--- | :--- | :--- |
+| `tests/test_experiments.py` (dedicated) | 32 Passed | 32 Passed | 32 Passed |
+| `tests/test_api_baseline.py` | 8 Passed | 8 Passed | 8 Passed |
+| `tests/test_crawler.py` | 25 Passed | 25 Passed | 25 Passed |
+| `tests/test_crawler_pagerank_integration.py` | 11 Passed | 11 Passed | 11 Passed |
+| `tests/test_graph_analysis.py` | 14 Passed | 14 Passed | 14 Passed |
+| `tests/test_graph_edge_cases.py` | 48 Passed | 48 Passed | 48 Passed |
+| `tests/test_pagerank_baseline.py` | 6 Passed, 2 Skipped | 6 Passed, 2 Skipped | 6 Passed, 2 Skipped |
+| `tests/test_pagerank_correctness.py` | 36 Passed | 36 Passed | 36 Passed |
+| `tests/test_ranking_comparator.py` | 47 Passed | 47 Passed | 47 Passed |
+| **Total Full Suite** | **227 Passed, 2 Skipped** | **227 Passed, 2 Skipped** | **227 Passed, 2 Skipped** |
+
+---
+
+## STEP 9 — COMPLETE
