@@ -1,11 +1,12 @@
 # System Architecture & Application Flow
 
-This document details the baseline architecture of the PageRank-Algo application as verified during the Phase 1 — Step 1 audit.
+This document details the architecture and endpoint-specific request/response flows of the PageRank-Algo application.
 
 ---
 
 ## 1. System Architecture Diagram
 
+```text
 Browser User Interface
          │
          ▼
@@ -23,18 +24,15 @@ Flask API Server (backend/app.py - Port 5000)
          │                               │                               │
          ▼                               ▼                               ▼
 backend/graph_validator.py (Input Validation & Normalization Boundary)
-         │
-         ▼
-backend/graph_analyzer.py (Structural Graph Analysis Layer)
-         │
-         ▼
-backend/pagerank.py (Iterative Power Method Solver)
-         │
-         ▼
-HTTP Response JSON (Sorted PageRank Scores + Structural Analysis + Graph Data)
-         │
-         ▼
-frontend/script.js (Cytoscape Graph Animation & UI Rendering)
+         │                               │
+         ├───────────────────────────────┤
+         ▼                               ▼
+backend/pagerank.py             backend/graph_analyzer.py
+(Iterative Power Method)        (Structural Analysis Layer)
+         │                               │
+         ▼                               ▼
+HTTP Response JSON               HTTP Response JSON
+(Sorted PageRank Scores)         (Structural Metrics, WCC, SCC)
 ```
 
 ---
@@ -52,15 +50,15 @@ frontend/script.js (Cytoscape Graph Animation & UI Rendering)
   - Generates labels and truncates long page names/URLs for clean visual rendering.
   - Dynamically switches graph layout (`circle` for $\le 8$ nodes, `cose` for $> 8$ nodes).
   - Handles async `fetch()` HTTP requests to the backend API (`http://127.0.0.1:5000`).
-  - Animates graph nodes (resizing diameter from 42px to 96px based on PageRank score ratio) and highlights top-ranked node (`#f0a202`) and top inbound edges.
+  - Animates graph nodes (resizing diameter based on PageRank score ratio) and highlights top-ranked node and inbound edges.
 
 ### 2.3 HTTP API Layer (`backend/app.py`)
 - **Technology**: Python 3.10+, Flask 3.0.2, Flask-CORS 4.0.0.
 - **Responsibility**:
-  - Exposes RESTful JSON endpoints (`/calculate` and `/crawl`).
+  - Exposes RESTful JSON endpoints (`/calculate`, `/analyze`, `/crawl`, `/compare`).
   - Manages Cross-Origin Resource Sharing (CORS) headers for local frontend access (`http://localhost:8000`, `http://127.0.0.1:8000`).
   - Validates request payloads and formats error responses.
-  - Invokes core algorithm and crawler modules.
+  - Delegates execution to specialized backend modules.
 
 ### 2.4 Crawler Layer (`backend/crawler.py`)
 - **Technology**: Python Requests 2.31.0, BeautifulSoup4 4.12.3, `urllib.parse`.
@@ -107,59 +105,40 @@ frontend/script.js (Cytoscape Graph Animation & UI Rendering)
 
 ## 3. Detailed Request / Response Flows
 
+Each API endpoint in `backend/app.py` executes a specific decoupled workflow:
+
 ### 3.1 PageRank Calculation Flow (`POST /calculate`)
 
 1. **User Action**: User clicks "Calculate PageRank" button in frontend.
-2. **Client Preparation**: `script.js` extracts node IDs (`cy.nodes().map(n => n.id())`) and edge pairs (`cy.edges().map(e => [e.data('source'), e.data('target')])`).
-3. **HTTP Request**: `script.js` sends `POST http://127.0.0.1:5000/calculate` with JSON body:
-   ```json
-   {
-     "pages": ["A", "B", "C"],
-     "links": [["A", "B"], ["B", "C"]]
-   }
-   ```
+2. **Client Preparation**: `script.js` extracts node IDs (`pages`) and directed edge pairs (`links`).
+3. **HTTP Request**: `script.js` sends `POST /calculate` with payload `{pages, links, damping?, max_iterations?, tol?}`.
 4. **Flask Handler**: `calculate()` in `app.py` receives request, validates presence of `pages` and `links`.
-5. **Algorithm Execution**: `app.py` calls `calculate_pagerank(pages, links)` in `pagerank.py`.
-6. **Sorting**: `app.py` sorts output scores descending: `{"C": 0.4744, "B": 0.3412, "A": 0.1844}`.
-7. **HTTP Response**: Returns `200 OK` with JSON object of page-to-score mappings.
-8. **UI Update**: `script.js` calls `displayResults()` to populate the ranking leaderboard and `animateGraph()` to scale node dimensions and highlight top authority nodes.
+5. **Graph Validation**: `graph_validator.py` validates canonical graph contract rules (nodes are non-empty strings, edges are 2-element sequences `[source, target]`).
+6. **Algorithm Execution**: `app.py` calls `calculate_pagerank(pages, links)` in `pagerank.py`.
+7. **Sorting**: `app.py` sorts output scores descending.
+8. **HTTP Response**: Returns `200 OK` with JSON object of page-to-score mappings.
 
 ### 3.2 Web Crawling & PageRank Flow (`POST /crawl`)
 
-1. **User Action**: User enters URL (e.g., `https://quotes.toscrape.com`) and page limit (e.g., 5), then clicks "Find links".
-2. **HTTP Request**: `script.js` sends `POST http://127.0.0.1:5000/crawl` with JSON body:
-   ```json
-   {
-     "url": "https://quotes.toscrape.com",
-     "max_pages": 5
-   }
-   ```
+1. **User Action**: User enters seed URL and page limit (e.g., 5), then clicks "Find links".
+2. **HTTP Request**: `script.js` sends `POST /crawl` with payload `{url, max_pages}`.
 3. **Flask Handler**: `crawl()` in `app.py` receives request and validates `url`.
-4. **Crawling Execution**: `app.py` calls `crawl_site(url, max_pages)` in `crawler.py`.
-   - `crawler.py` normalizes URL, fetches pages via `requests.Session`, parses HTML using `BeautifulSoup`, extracts internal same-domain links, and returns `{"pages": [...], "links": [...]}`.
-5. **Algorithm Execution**: `app.py` passes extracted `graph['pages']` and `graph['links']` directly into `calculate_pagerank()`.
-6. **HTTP Response**: Returns `200 OK` with JSON body:
-   ```json
-   {
-     "pages": [...],
-     "links": [...],
-     "scores": { ... }
-   }
-   ```
-7. **UI Update**: `script.js` clears existing graph, populates newly crawled nodes and edges, applies `cose` layout, displays crawl summary message, and renders ranking results.
+4. **Crawling Execution**: `app.py` calls `crawl_site(url, max_pages)` in `crawler.py` (executes bounded BFS, normalizes URLs, enforces same-host boundary, returns `pages` and `links`).
+5. **Graph Validation & PageRank Execution**: Extracted graph is validated via `graph_validator.py` and passed to `calculate_pagerank()`.
+6. **HTTP Response**: Returns `200 OK` with JSON body containing crawled `pages`, `links`, and computed PageRank `scores`.
 
 ### 3.3 Ranking Comparison Flow (`POST /compare`)
 
-1. **Client Request**: Client sends `POST http://127.0.0.1:5000/compare` with JSON body:
-   ```json
-   {
-     "ranking_a": {"A": 0.4, "B": 0.3, "C": 0.3},
-     "ranking_b": {"A": 0.5, "B": 0.3, "C": 0.2},
-     "top_k": [1, 2, 3]
-   }
-   ```
-2. **Flask Handler**: `compare()` in `app.py` validates presence of `ranking_a` and `ranking_b`.
+1. **Client Request**: Client sends `POST /compare` with payload `{ranking_a, ranking_b, top_k}`.
+2. **Flask Handler**: `compare()` in `app.py` validates presence of ranking payloads.
 3. **Execution**: Invokes `compare_rankings()` in `ranking_comparator.py`.
 4. **Validation & Alignment**: Validates node IDs and score numerics; aligns node ordering lexicographically.
 5. **Metric Calculation**: Calculates L1/L2 distance, cosine similarity, Spearman correlation, Kendall tau-b, top-k overlap, and rank displacement statistics.
 6. **HTTP Response**: Returns `200 OK` with JSON containing all mathematical metrics, or `400 Bad Request` if vector validation fails.
+
+### 3.4 Structural Graph Analysis Flow (`POST /analyze`)
+
+1. **Client Request**: Client sends `POST /analyze` with payload `{pages, links}`.
+2. **Flask Handler**: `analyze()` in `app.py` receives request and validates presence of `pages` and `links`.
+3. **Graph Validation & Analysis Execution**: Validates graph via `graph_validator.py` and invokes `analyze_graph()` in `graph_analyzer.py`.
+4. **HTTP Response**: Returns `200 OK` with JSON body containing structural properties (`node_count`, `edge_count`, `density`, `in_degree`, `out_degree`, `dangling_node_count`, `isolated_node_count`, `weakly_connected_components`, `strongly_connected_components`).
