@@ -104,9 +104,15 @@ The application does not need the website's IP address. It needs page URLs and d
 
 ## Project Structure
 
-- `backend/app.py`: Flask application with the REST API.
-- `backend/crawler.py`: Experimental same-domain crawler for URL input.
-- `backend/pagerank.py`: Core logic for the manual iterative PageRank algorithm.
-- `frontend/index.html`: Main layout and UI structure.
-- `frontend/style.css`: Modern card-based UI and dark theme.
-- `frontend/script.js`: Graph manipulation and API communication.
+- `backend/app.py`: Flask application with REST API endpoints (`/calculate`, `/analyze`, `/crawl`, `/compare`).
+- `backend/crawler.py`: Hardened, deterministic Breadth-First Search (BFS) web crawler.
+- `backend/pagerank.py`: Core PageRank solver using power iteration with in-iteration dangling-node redistribution.
+- `backend/graph_validator.py`: Canonical graph contract validation and parameter range checking boundary.
+- `backend/graph_analyzer.py`: Structural graph analysis layer (density, in/out degree, WCC, SCC).
+- `backend/ranking_comparator.py`: Ranking comparison layer (L1, L2, Cosine, Spearman, Kendall, Top-K overlap, rank displacements).
+- `experiments/`: Controlled experiment datasets catalog, configuration model, parameter sweeps, and JSON exporter.
+- `frontend/index.html`: Main visual UI layout.
+- `frontend/style.css`: Modern card-based UI layout and dark theme styling.
+- `frontend/script.js`: Client-side graph visual engine (Cytoscape.js) and API communication.
+- `docs/`: Comprehensive research specifications, architecture descriptions, and research log.
+- `tests/`: Complete automated unit and integration test suite.
