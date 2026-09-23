@@ -3,7 +3,7 @@ import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from crawler import crawl_site
-from pagerank import calculate_pagerank
+from pagerank import calculate_pagerank, calculate_pagerank_detailed
 from graph_validator import validate_graph, validate_pagerank_params
 from graph_analyzer import analyze_graph
 from ranking_comparator import compare_rankings
@@ -36,7 +36,12 @@ def calculate():
             max_iterations=data.get('max_iterations')
         )
         
-        # Calculate PageRank
+        # Calculate PageRank (Detailed vs Standard)
+        if data.get('detailed'):
+            detailed_res = calculate_pagerank_detailed(pages, links, **params)
+            detailed_res['ranking'] = dict(sorted(detailed_res['ranking'].items(), key=lambda item: item[1], reverse=True))
+            return jsonify(detailed_res), 200
+
         pr_scores = calculate_pagerank(pages, links, **params)
         
         # Sort the scores in descending order

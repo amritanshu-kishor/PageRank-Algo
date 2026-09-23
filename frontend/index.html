@@ -3,124 +3,637 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PageRank Graph Workbench</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>PageRank Graph Workbench — Research Engineering Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=20260526-frontend-rework">
+    <link rel="stylesheet" href="style.css?v=20260923-app-shell">
 </head>
 <body>
-    <div class="app-shell">
-        <aside class="menu-panel">
-            <header class="brand-block">
-                <div>
-                    <p class="eyebrow">Graph ranking lab</p>
-                    <h1>PageRank Workbench</h1>
-                </div>
-                <span class="status-pill">Local API</span>
-            </header>
+    <!-- Top-Level Application Shell Header -->
+    <header class="app-header">
+        <div class="header-brand">
+            <span class="eyebrow">Phase 1 Research Engine</span>
+            <h1 class="header-title">PageRank Workbench</h1>
+        </div>
 
-            <section class="stats-grid" aria-label="Graph summary">
-                <div>
-                    <span id="graph-node-count">0</span>
-                    <p>Pages</p>
-                </div>
-                <div>
-                    <span id="graph-link-count">0</span>
-                    <p>Links</p>
-                </div>
-                <div>
-                    <span id="top-node">None</span>
-                    <p>Top rank</p>
-                </div>
-            </section>
+        <nav class="app-nav" aria-label="Main Research Workflows" role="tablist">
+            <button class="nav-tab active" role="tab" aria-selected="true" aria-controls="view-explorer" id="tab-explorer" data-tab="explorer">
+                <span class="tab-icon">⌘</span> Graph Explorer
+            </button>
+            <button class="nav-tab" role="tab" aria-selected="false" aria-controls="view-inspector" id="tab-inspector" data-tab="inspector">
+                <span class="tab-icon">🔍</span> PageRank Inspector
+            </button>
+            <button class="nav-tab" role="tab" aria-selected="false" aria-controls="view-analysis" id="tab-analysis" data-tab="analysis">
+                <span class="tab-icon">📊</span> Graph Analysis
+            </button>
+            <button class="nav-tab" role="tab" aria-selected="false" aria-controls="view-comparison" id="tab-comparison" data-tab="comparison">
+                <span class="tab-icon">⚖️</span> Ranking Comparison
+            </button>
+            <button class="nav-tab" role="tab" aria-selected="false" aria-controls="view-lab" id="tab-lab" data-tab="lab">
+                <span class="tab-icon">🧪</span> Experiment Lab
+            </button>
+        </nav>
 
-            <section class="menu-section">
-                <div class="section-heading">
-                    <span>1</span>
-                    <h2>Add page</h2>
-                </div>
-                <div class="field-row">
-                    <input type="text" id="node-name" placeholder="https://example.com/page">
-                    <button id="add-node-btn" class="btn btn-primary">Add</button>
-                </div>
-            </section>
+        <div class="header-status">
+            <span id="backend-status-pill" class="status-pill status-offline" title="Backend Server Status">
+                <span id="status-dot" class="status-dot"></span>
+                <span id="backend-status-text">127.0.0.1:5000</span>
+            </span>
+        </div>
+    </header>
 
-            <section class="menu-section">
-                <div class="section-heading">
-                    <span>2</span>
-                    <h2>Connect pages</h2>
-                </div>
-                <div class="stack">
-                    <input type="text" id="link-source" placeholder="Source URL or page name">
-                    <div class="connector-row">
-                        <span class="arrow-line"></span>
-                        <span>points to</span>
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- Main View Panels -->
+    <div class="views-wrapper">
+        <!-- View 1: Graph Explorer -->
+        <section id="view-explorer" class="view-panel active-view" role="tabpanel" aria-labelledby="tab-explorer">
+            <div class="app-shell">
+                <aside class="menu-panel">
+                    <section class="stats-grid" aria-label="Graph summary metrics">
+                        <div class="stat-card">
+                            <span id="graph-node-count" class="stat-value">0</span>
+                            <span class="stat-label">Nodes (Pages)</span>
+                        </div>
+                        <div class="stat-card">
+                            <span id="graph-link-count" class="stat-value">0</span>
+                            <span class="stat-label">Edges (Links)</span>
+                        </div>
+                        <div class="stat-card span-full">
+                            <span id="top-node" class="stat-value text-truncate">None</span>
+                            <span class="stat-label">Highest Rank Authority</span>
+                        </div>
+                    </section>
+
+                    <section class="menu-section">
+                        <div class="section-heading">
+                            <span class="step-num">01</span>
+                            <h2>Add Node</h2>
+                        </div>
+                        <div class="field-group">
+                            <label for="node-name" class="visually-hidden">Page URL or Identifier</label>
+                            <div class="field-row">
+                                <input type="text" id="node-name" class="form-input" placeholder="e.g. https://example.com/page">
+                                <button id="add-node-btn" class="btn btn-primary">Add</button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="menu-section">
+                        <div class="section-heading">
+                            <span class="step-num">02</span>
+                            <h2>Connect Directed Edge</h2>
+                        </div>
+                        <div class="stack">
+                            <div class="field-group">
+                                <label for="link-source" class="form-label">Source Node</label>
+                                <input type="text" id="link-source" class="form-input" placeholder="Source URL or page name">
+                            </div>
+                            <div class="connector-indicator" aria-hidden="true">
+                                <span class="arrow-line"></span>
+                                <span class="connector-label">points to</span>
+                            </div>
+                            <div class="field-group">
+                                <label for="link-target" class="form-label">Target Node</label>
+                                <input type="text" id="link-target" class="form-input" placeholder="Target URL or page name">
+                            </div>
+                            <button id="add-link-btn" class="btn btn-primary full-width">Add Directed Link</button>
+                        </div>
+                    </section>
+
+                    <section class="menu-section">
+                        <div class="section-heading">
+                            <span class="step-num">03</span>
+                            <h2>Graph Controls</h2>
+                        </div>
+                        <div class="button-grid">
+                            <button id="load-sample-btn" class="btn btn-secondary">Sample</button>
+                            <button id="relayout-btn" class="btn btn-secondary">Layout</button>
+                            <button id="fit-btn" class="btn btn-secondary">Fit</button>
+                            <button id="clear-btn" class="btn btn-secondary btn-danger">Clear</button>
+                        </div>
+                        <button id="calculate-btn" class="btn btn-accent full-width">Compute PageRank</button>
+                    </section>
+
+                    <section class="menu-section optional-tool">
+                        <div class="section-heading">
+                            <span class="step-num">+</span>
+                            <h2>Bounded Web Crawler</h2>
+                        </div>
+                        <div class="stack">
+                            <div class="field-group">
+                                <label for="crawl-url" class="form-label">Seed URL</label>
+                                <input type="url" id="crawl-url" class="form-input" placeholder="https://quotes.toscrape.com">
+                            </div>
+                            <div class="field-row compact">
+                                <div class="field-group limit-group">
+                                    <label for="crawl-limit" class="form-label">Limit</label>
+                                    <input type="number" id="crawl-limit" class="form-input" min="1" max="30" value="8" title="Maximum pages to crawl">
+                                </div>
+                                <button id="crawl-btn" class="btn btn-secondary align-end">Execute Crawl</button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="results-panel hidden" id="results-section">
+                        <div class="results-header">
+                            <h2>PageRank Distribution</h2>
+                            <div id="loading" class="loading-indicator hidden" aria-live="polite">Computing...</div>
+                        </div>
+                        <div id="crawl-summary" class="crawl-summary hidden"></div>
+                        <ol id="ranking-list" class="ranking-list"></ol>
+                    </section>
+                </aside>
+
+                <main class="graph-stage">
+                    <div class="stage-toolbar">
+                        <div class="toolbar-brand">
+                            <span class="eyebrow">Graph Visual Representation</span>
+                            <h2>Directed Graph Canvas</h2>
+                        </div>
+                        
+                        <div class="toolbar-controls">
+                            <!-- Node Search Filter -->
+                            <div class="search-box">
+                                <label for="node-search-input" class="visually-hidden">Search Graph Nodes</label>
+                                <input type="text" id="node-search-input" class="form-input form-input-sm" placeholder="Search node...">
+                            </div>
+
+                            <!-- Layout Algorithm Selector -->
+                            <div class="layout-box">
+                                <label for="layout-select" class="visually-hidden">Graph Layout Algorithm</label>
+                                <select id="layout-select" class="form-select form-input-sm" title="Choose Cytoscape Layout Algorithm">
+                                    <option value="auto">Auto Layout</option>
+                                    <option value="cose">COSE Force-Directed</option>
+                                    <option value="circle">Circle Layout</option>
+                                    <option value="concentric">Concentric Layout</option>
+                                    <option value="breadthfirst">Breadthfirst Tree</option>
+                                </select>
+                            </div>
+
+                            <!-- Zoom Controls -->
+                            <div class="zoom-group">
+                                <button id="zoom-in-btn" class="btn btn-icon-sm" title="Zoom In">+</button>
+                                <button id="zoom-out-btn" class="btn btn-icon-sm" title="Zoom Out">−</button>
+                                <button id="zoom-reset-btn" class="btn btn-icon-sm" title="Reset Zoom">1:1</button>
+                            </div>
+                        </div>
+
+                        <div class="legend">
+                            <span class="legend-item"><i class="legend-swatch node-swatch"></i> Node</span>
+                            <span class="legend-item"><i class="legend-swatch edge-swatch"></i> Directed Link</span>
+                            <span class="legend-item"><i class="legend-swatch top-swatch"></i> Maximum Rank</span>
+                        </div>
                     </div>
-                    <input type="text" id="link-target" placeholder="Target URL or page name">
-                    <button id="add-link-btn" class="btn btn-primary full-width">Add directed link</button>
-                </div>
-            </section>
 
-            <section class="menu-section">
-                <div class="section-heading">
-                    <span>3</span>
-                    <h2>Analyze</h2>
-                </div>
-                <div class="button-grid">
-                    <button id="load-sample-btn" class="btn btn-quiet">Sample</button>
-                    <button id="relayout-btn" class="btn btn-quiet">Layout</button>
-                    <button id="fit-btn" class="btn btn-quiet">Fit</button>
-                    <button id="clear-btn" class="btn btn-danger">Clear</button>
-                </div>
-                <button id="calculate-btn" class="btn btn-accent full-width">Calculate PageRank</button>
-            </section>
+                    <div class="canvas-frame">
+                        <div id="cy"></div>
 
-            <section class="menu-section optional-tool">
-                <div class="section-heading">
-                    <span>+</span>
-                    <h2>Experimental crawl</h2>
-                </div>
-                <div class="stack">
-                    <input type="url" id="crawl-url" placeholder="https://quotes.toscrape.com">
-                    <div class="field-row compact">
-                        <input type="number" id="crawl-limit" min="1" max="30" value="8" title="Maximum pages to crawl">
-                        <button id="crawl-btn" class="btn btn-quiet">Find links</button>
+                        <!-- Empty Canvas Overlay -->
+                        <div id="empty-state" class="empty-state">
+                            <div class="empty-icon" aria-hidden="true">∅</div>
+                            <h3>Empty Graph State</h3>
+                            <p>Add nodes and directed links manually, or load a sample graph to compute PageRank scores.</p>
+                        </div>
+
+                        <!-- Node Details Inspector Drawer -->
+                        <aside id="node-detail-drawer" class="node-drawer hidden" aria-label="Selected Node Details">
+                            <div class="drawer-header">
+                                <div class="drawer-title-group">
+                                    <span class="eyebrow">Selected Node</span>
+                                    <h3 id="drawer-node-id" class="drawer-node-title">Node Name</h3>
+                                </div>
+                                <button id="drawer-close-btn" class="btn-close" aria-label="Close details panel">×</button>
+                            </div>
+
+                            <div class="drawer-body">
+                                <div class="drawer-metrics">
+                                    <div class="metric-box">
+                                        <span class="metric-label">PageRank Score</span>
+                                        <span id="drawer-pagerank" class="metric-val mono-highlight">Uncomputed</span>
+                                    </div>
+                                    <div class="metric-row">
+                                        <div class="metric-box compact">
+                                            <span class="metric-label">In-Degree</span>
+                                            <span id="drawer-indegree" class="metric-val">0</span>
+                                        </div>
+                                        <div class="metric-box compact">
+                                            <span class="metric-label">Out-Degree</span>
+                                            <span id="drawer-outdegree" class="metric-val">0</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="drawer-section">
+                                    <h4>Inbound Links (<span id="drawer-inbound-count">0</span>)</h4>
+                                    <ul id="drawer-inbound-list" class="neighbor-list"></ul>
+                                </div>
+
+                                <div class="drawer-section">
+                                    <h4>Outbound Links (<span id="drawer-outbound-count">0</span>)</h4>
+                                    <ul id="drawer-outbound-list" class="neighbor-list"></ul>
+                                </div>
+                            </div>
+
+                            <div class="drawer-footer">
+                                <button id="delete-node-btn" class="btn btn-secondary btn-danger full-width">Delete Node from Graph</button>
+                            </div>
+                        </aside>
+                    </div>
+                </main>
+            </div>
+        </section>
+
+        <!-- View 2: PageRank Inspector -->
+        <section id="view-inspector" class="view-panel" role="tabpanel" aria-labelledby="tab-inspector">
+            <div class="inspector-container">
+                <!-- Controls Header -->
+                <header class="view-header">
+                    <div class="view-title-group">
+                        <span class="eyebrow">Module 02 — Algorithm Diagnostics</span>
+                        <h2>PageRank Inspector & Iteration Trace</h2>
+                        <p>Execute detailed power iteration breakdowns, inspect convergence metrics, adjust parameters, and verify rank mass conservation.</p>
+                    </div>
+
+                    <div class="params-bar">
+                        <div class="param-field">
+                            <label for="insp-damping" class="form-label">Damping Factor (d)</label>
+                            <input type="number" id="insp-damping" class="form-input form-input-sm" min="0.01" max="0.99" step="0.05" value="0.85">
+                        </div>
+                        <div class="param-field">
+                            <label for="insp-tol" class="form-label">Tolerance (L1)</label>
+                            <select id="insp-tol" class="form-select form-input-sm">
+                                <option value="1e-4">1e-4 (Coarse)</option>
+                                <option value="1e-6" selected>1e-6 (Standard)</option>
+                                <option value="1e-9">1e-9 (High Precision)</option>
+                            </select>
+                        </div>
+                        <div class="param-field">
+                            <label for="insp-max-iter" class="form-label">Max Iterations</label>
+                            <input type="number" id="insp-max-iter" class="form-input form-input-sm" min="1" max="500" value="100">
+                        </div>
+                        <button id="run-inspector-btn" class="btn btn-accent align-end">Run Inspector</button>
+                    </div>
+                </header>
+
+                <!-- Metric Summary Cards -->
+                <div class="inspector-metrics-grid">
+                    <div class="metric-card-lg">
+                        <span class="metric-label">Iterations Performed</span>
+                        <span id="insp-metric-iter" class="metric-val-lg">—</span>
+                    </div>
+                    <div class="metric-card-lg">
+                        <span class="metric-label">Convergence Status</span>
+                        <span id="insp-metric-status" class="metric-val-lg">—</span>
+                    </div>
+                    <div class="metric-card-lg">
+                        <span class="metric-label">Final L1 Norm Error</span>
+                        <span id="insp-metric-error" class="metric-val-lg">—</span>
+                    </div>
+                    <div class="metric-card-lg">
+                        <span class="metric-label">Total Rank Mass Sum</span>
+                        <span id="insp-metric-mass" class="metric-val-lg">—</span>
                     </div>
                 </div>
-            </section>
 
-            <section class="results-panel hidden" id="results-section">
-                <div class="results-header">
-                    <h2>Ranking</h2>
-                    <div id="loading" class="hidden">Working...</div>
-                </div>
-                <div id="crawl-summary" class="crawl-summary hidden"></div>
-                <ol id="ranking-list" class="ranking-list"></ol>
-            </section>
-        </aside>
-
-        <main class="graph-stage">
-            <div class="stage-toolbar">
-                <div>
-                    <p class="eyebrow">Directed graph</p>
-                    <h2>Pages and inbound authority</h2>
-                </div>
-                <div class="legend">
-                    <span><i class="legend-node"></i> Page</span>
-                    <span><i class="legend-edge"></i> Link</span>
-                    <span><i class="legend-top"></i> Highest rank</span>
+                <!-- Main Breakdown Table -->
+                <div class="inspector-table-frame">
+                    <div class="table-header">
+                        <h3>Node Rank Breakdown & Mass Distribution</h3>
+                        <span class="table-subtitle">Computed over current Explorer graph state</span>
+                    </div>
+                    <div class="table-scroll-container">
+                        <table class="data-table" id="inspector-table">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Page Node ID</th>
+                                    <th>PageRank Score</th>
+                                    <th>Out-Degree</th>
+                                    <th>Node Type</th>
+                                    <th>Inbound Links</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inspector-tbody">
+                                <tr>
+                                    <td colspan="6" class="empty-table-cell">No calculation performed yet. Load graph in Explorer and click "Run Inspector".</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
-            <div class="canvas-frame">
-                <div id="cy"></div>
-                <div id="empty-state" class="empty-state">
-                    <h3>Build a link graph</h3>
-                    <p>Add pages, connect them, then calculate PageRank.</p>
+        </section>
+
+        <!-- View 3: Graph Analysis -->
+        <section id="view-analysis" class="view-panel" role="tabpanel" aria-labelledby="tab-analysis">
+            <div class="analysis-container">
+                <!-- View Header -->
+                <header class="view-header">
+                    <div class="view-header-row">
+                        <div class="view-title-group">
+                            <span class="eyebrow">Module 03 — Topology & Structure</span>
+                            <h2>Structural Graph Analysis</h2>
+                            <p>Compute graph density, degree distributions, weakly/strongly connected components (WCC/SCC), and dangling/isolated node diagnostics.</p>
+                        </div>
+                        <button id="run-analysis-btn" class="btn btn-accent align-end">Run Structural Analysis</button>
+                    </div>
+                </header>
+
+                <!-- Metric Summary Cards Grid -->
+                <div class="analysis-metrics-grid">
+                    <div class="metric-card-lg">
+                        <span class="metric-label">Nodes (N)</span>
+                        <span id="ana-node-count" class="metric-val-lg">—</span>
+                    </div>
+                    <div class="metric-card-lg">
+                        <span class="metric-label">Edges (E)</span>
+                        <span id="ana-edge-count" class="metric-val-lg">—</span>
+                    </div>
+                    <div class="metric-card-lg">
+                        <span class="metric-label">Graph Density</span>
+                        <span id="ana-density" class="metric-val-lg">—</span>
+                    </div>
+                    <div class="metric-card-lg">
+                        <span class="metric-label">Weak Components (WCC)</span>
+                        <span id="ana-wcc-count" class="metric-val-lg">—</span>
+                    </div>
+                    <div class="metric-card-lg">
+                        <span class="metric-label">Strong Components (SCC)</span>
+                        <span id="ana-scc-count" class="metric-val-lg">—</span>
+                    </div>
+                    <div class="metric-card-lg">
+                        <span class="metric-label">Dangling / Isolated</span>
+                        <span id="ana-dangling-isolated" class="metric-val-lg">—</span>
+                    </div>
+                </div>
+
+                <!-- Main Analysis Body (2 Columns) -->
+                <div class="analysis-body-grid">
+                    <!-- Left Panel: Connected Components Topology -->
+                    <div class="analysis-panel-card">
+                        <div class="panel-card-header">
+                            <h3>Component Topology Diagnostics</h3>
+                            <span class="table-subtitle">Graph connectivity partitioning</span>
+                        </div>
+                        
+                        <div class="component-section">
+                            <h4>Weakly Connected Components (Undirected)</h4>
+                            <div id="ana-wcc-container" class="component-box-scroll">
+                                <p class="empty-text">No analysis executed yet.</p>
+                            </div>
+                        </div>
+
+                        <div class="component-section margin-top-md">
+                            <h4>Strongly Connected Components (Directed / Tarjan)</h4>
+                            <div id="ana-scc-container" class="component-box-scroll">
+                                <p class="empty-text">No analysis executed yet.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Panel: Node Degree & Classification Table -->
+                    <div class="analysis-panel-card">
+                        <div class="panel-card-header">
+                            <h3>Node Degrees & Special Classifications</h3>
+                            <span class="table-subtitle">In-degree, out-degree, and structural role</span>
+                        </div>
+
+                        <div class="table-scroll-container">
+                            <table class="data-table" id="analysis-degree-table">
+                                <thead>
+                                    <tr>
+                                        <th>Page Node ID</th>
+                                        <th>In-Degree</th>
+                                        <th>Out-Degree</th>
+                                        <th>Classification</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="analysis-tbody">
+                                    <tr>
+                                        <td colspan="4" class="empty-table-cell">No analysis performed yet. Click "Run Structural Analysis".</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </main>
+        </section>
+
+        <!-- View 4: Ranking Comparison -->
+        <section id="view-comparison" class="view-panel" role="tabpanel" aria-labelledby="tab-comparison">
+            <div class="comparison-container">
+                <!-- View Header -->
+                <header class="view-header">
+                    <div class="view-header-row">
+                        <div class="view-title-group">
+                            <span class="eyebrow">Module 04 — Vector Distance Metrics</span>
+                            <h2>Ranking Comparison Studio</h2>
+                            <p>Compute L1/L2 distance, Cosine similarity, Spearman/Kendall rank correlations, Top-K overlap, and per-node rank displacement between two PageRank vectors.</p>
+                        </div>
+                        <div class="header-action-group">
+                            <button id="load-preset-compare-btn" class="btn btn-secondary">Load Graph (d=0.85 vs d=0.50)</button>
+                            <button id="run-compare-btn" class="btn btn-accent">Compare Vectors</button>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- Vector Input Controls -->
+                <div class="comparison-inputs-grid">
+                    <div class="vector-input-box">
+                        <div class="vector-box-header">
+                            <label for="comp-vector-a" class="form-label">Ranking Vector A (JSON mapping page -> score)</label>
+                            <span class="vector-tag">Baseline Vector</span>
+                        </div>
+                        <textarea id="comp-vector-a" class="form-input form-textarea-mono" rows="3" placeholder='{"Home": 0.40, "Docs": 0.35, "Blog": 0.25}'></textarea>
+                    </div>
+
+                    <div class="vector-input-box">
+                        <div class="vector-box-header">
+                            <label for="comp-vector-b" class="form-label">Ranking Vector B (JSON mapping page -> score)</label>
+                            <span class="vector-tag">Comparative Vector</span>
+                        </div>
+                        <textarea id="comp-vector-b" class="form-input form-textarea-mono" rows="3" placeholder='{"Home": 0.30, "Docs": 0.45, "Blog": 0.25}'></textarea>
+                    </div>
+                </div>
+
+                <!-- Distance Metric Summary Cards Grid -->
+                <div class="comparison-metrics-grid">
+                    <div class="metric-card-lg">
+                        <span class="metric-label">L1 Distance</span>
+                        <span id="comp-metric-l1" class="metric-val-lg">—</span>
+                    </div>
+                    <div class="metric-card-lg">
+                        <span class="metric-label">L2 Distance</span>
+                        <span id="comp-metric-l2" class="metric-val-lg">—</span>
+                    </div>
+                    <div class="metric-card-lg">
+                        <span class="metric-label">Cosine Similarity</span>
+                        <span id="comp-metric-cosine" class="metric-val-lg">—</span>
+                    </div>
+                    <div class="metric-card-lg">
+                        <span class="metric-label">Spearman Rank Correlation (ρ)</span>
+                        <span id="comp-metric-spearman" class="metric-val-lg">—</span>
+                    </div>
+                    <div class="metric-card-lg">
+                        <span class="metric-label">Kendall Tau-b Correlation (τ)</span>
+                        <span id="comp-metric-kendall" class="metric-val-lg">—</span>
+                    </div>
+                    <div class="metric-card-lg">
+                        <span class="metric-label">Max / Mean Displacement</span>
+                        <span id="comp-metric-disp" class="metric-val-lg">—</span>
+                    </div>
+                </div>
+
+                <!-- Main Comparison Results Body (2 Columns) -->
+                <div class="comparison-body-grid">
+                    <!-- Left Panel: Top-K Overlap Analysis -->
+                    <div class="comparison-panel-card">
+                        <div class="panel-card-header">
+                            <h3>Top-K Rank Overlap Diagnostics</h3>
+                            <span class="table-subtitle">Intersection ratio of highest-authority nodes</span>
+                        </div>
+                        
+                        <div id="comp-topk-container" class="topk-grid-scroll">
+                            <p class="empty-text">No comparison executed yet.</p>
+                        </div>
+                    </div>
+
+                    <!-- Right Panel: Side-by-Side Node Rank Table -->
+                    <div class="comparison-panel-card">
+                        <div class="panel-card-header">
+                            <h3>Node Vector & Rank Shift Breakdown</h3>
+                            <span class="table-subtitle">Per-node score delta & rank displacement</span>
+                        </div>
+
+                        <div class="table-scroll-container">
+                            <table class="data-table" id="comparison-table">
+                                <thead>
+                                    <tr>
+                                        <th>Page Node ID</th>
+                                        <th>Score Vector A</th>
+                                        <th>Score Vector B</th>
+                                        <th>Score Δ (|A - B|)</th>
+                                        <th>Rank Shift (|rA - rB|)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="comparison-tbody">
+                                    <tr>
+                                        <td colspan="5" class="empty-table-cell">No comparison performed yet. Click "Compare Vectors".</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- View 5: Experiment Lab -->
+        <section id="view-lab" class="view-panel" role="tabpanel" aria-labelledby="tab-lab">
+            <div class="lab-container">
+                <!-- View Header -->
+                <header class="view-header">
+                    <div class="view-header-row">
+                        <div class="view-title-group">
+                            <span class="eyebrow">Module 05 — Research Experiments</span>
+                            <h2>Experiment Lab & Research Suite</h2>
+                            <p>Select controlled benchmark datasets (A–G), run damping parameter sweeps, perform graph scale benchmarks, and export reproducible JSON experiment artifacts.</p>
+                        </div>
+                        <div class="header-action-group">
+                            <button id="run-sweep-btn" class="btn btn-accent">Run Parameter Sweep</button>
+                            <button id="export-json-btn" class="btn btn-secondary">Export JSON Results</button>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- Controlled Dataset Catalogue Buttons Grid -->
+                <div class="lab-catalogue-bar">
+                    <span class="catalogue-label">Dataset Catalogue:</span>
+                    <div class="catalogue-btn-group">
+                        <button class="btn btn-dataset active" data-dataset="A" title="Linear Chain: A→B→C→D">Dataset A (Chain-4)</button>
+                        <button class="btn btn-dataset" data-dataset="B" title="Directed Cycle: A→B→C→A">Dataset B (Cycle-3)</button>
+                        <button class="btn btn-dataset" data-dataset="C" title="Dangling Node: A→B→C">Dataset C (Dangling-3)</button>
+                        <button class="btn btn-dataset" data-dataset="D" title="Disconnected Components: 2 sub-graphs + 1 isolated">Dataset D (Disconnected-5)</button>
+                        <button class="btn btn-dataset" data-dataset="E" title="Authority Hub: One central node with incoming edges">Dataset E (Hub-4)</button>
+                        <button class="btn btn-dataset" data-dataset="F" title="Outward Star: Center pointing to all leaves">Dataset F (Star-4)</button>
+                        <button class="btn btn-dataset" data-dataset="G" title="Complex Mixed Topology: Cycle + Dangling + Isolated">Dataset G (Mixed-7)</button>
+                    </div>
+                </div>
+
+                <!-- Experiment Summary Cards Grid -->
+                <div class="lab-metrics-grid">
+                    <div class="metric-card-lg">
+                        <span class="metric-label">Active Dataset</span>
+                        <span id="lab-metric-dataset" class="metric-val-lg">Dataset A (Chain-4)</span>
+                    </div>
+                    <div class="metric-card-lg">
+                        <span class="metric-label">Iterations (d=0.85)</span>
+                        <span id="lab-metric-iter" class="metric-val-lg">—</span>
+                    </div>
+                    <div class="metric-card-lg">
+                        <span class="metric-label">Final L1 Error</span>
+                        <span id="lab-metric-error" class="metric-val-lg">—</span>
+                    </div>
+                    <div class="metric-card-lg">
+                        <span class="metric-label">Rank Mass Conservation</span>
+                        <span id="lab-metric-mass" class="metric-val-lg">—</span>
+                    </div>
+                </div>
+
+                <!-- Experiment Results Main Body (2 Columns) -->
+                <div class="lab-body-grid">
+                    <!-- Left Panel: Parameter Sweep Table -->
+                    <div class="lab-panel-card">
+                        <div class="panel-card-header">
+                            <h3>Damping Parameter Sweep (d ∈ [0.15 ... 0.95])</h3>
+                            <span class="table-subtitle">Convergence speed & authority shift under damping variance</span>
+                        </div>
+
+                        <div class="table-scroll-container">
+                            <table class="data-table" id="lab-sweep-table">
+                                <thead>
+                                    <tr>
+                                        <th>Damping d</th>
+                                        <th>Iterations</th>
+                                        <th>Status</th>
+                                        <th>Final L1 Error</th>
+                                        <th>Top Authority Node</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lab-sweep-tbody">
+                                    <tr>
+                                        <td colspan="5" class="empty-table-cell">No sweep executed. Click "Run Parameter Sweep".</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Right Panel: Raw Reproducible JSON View -->
+                    <div class="lab-panel-card">
+                        <div class="panel-card-header">
+                            <h3>Reproducible Experiment Artifact (JSON)</h3>
+                            <span class="table-subtitle">Machine-readable execution trace</span>
+                        </div>
+
+                        <div class="json-output-scroll">
+                            <pre id="lab-json-output" class="json-code-block">{
+  "status": "Ready",
+  "message": "Click 'Run Parameter Sweep' to generate machine-readable experiment trace."
+}</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
     </div>
 
-    <script src="script.js?v=20260526-frontend-rework"></script>
+    <script src="script.js?v=20260923-app-shell"></script>
 </body>
 </html>
+
