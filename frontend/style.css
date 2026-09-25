@@ -1811,126 +1811,127 @@ body {
   .comparison-metrics-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-}
 
-/* ==========================================================================
+  /* ==========================================================================
    Step 9: Experiment Lab & Research Suite — Styles
    ========================================================================== */
 
-.lab-container {
-  display: flex;
-  flex-direction: column;
-  min-height: 100%;
-  height: auto;
-  overflow: visible;
-  background: var(--bg-canvas);
-}
+  .lab-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    height: auto;
+    overflow: visible;
+    background: var(--bg-canvas);
+  }
 
-.lab-catalogue-bar {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-4) var(--space-6);
-  background: var(--bg-surface);
-  border-bottom: 1px solid var(--border-light);
-  flex-shrink: 0;
-  flex-wrap: wrap;
-}
+  .lab-catalogue-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-4) var(--space-6);
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-light);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
 
-.catalogue-label {
-  font-family: var(--font-body);
-  font-size: 0.78rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-  flex-shrink: 0;
-}
+  .catalogue-label {
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
 
-.catalogue-btn-group {
-  display: flex;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-}
+  .catalogue-btn-group {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+  }
 
-.btn-dataset {
-  padding: var(--space-2) var(--space-3);
-  font-family: var(--font-mono);
-  font-size: 0.76rem;
-  background: var(--bg-surface-elevated);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 120ms ease;
-}
+  .btn-dataset {
+    padding: var(--space-2) var(--space-3);
+    font-family: var(--font-mono);
+    font-size: 0.76rem;
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 120ms ease;
+  }
 
-.btn-dataset:hover {
-  border-color: var(--border-medium);
-  color: var(--text-primary);
-}
+  .btn-dataset:hover {
+    border-color: var(--border-medium);
+    color: var(--text-primary);
+  }
 
-.btn-dataset.active {
-  background: var(--accent-light);
-  border-color: var(--accent-primary);
-  color: var(--accent-hover);
-  font-weight: 600;
-}
+  .btn-dataset.active {
+    background: var(--accent-light);
+    border-color: var(--accent-primary);
+    color: var(--accent-hover);
+    font-weight: 600;
+  }
 
-.lab-metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-4);
-  padding: var(--space-6);
-  background: var(--bg-canvas);
-  border-bottom: 1px solid var(--border-light);
-  flex-shrink: 0;
-}
-
-.lab-body-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-6);
-  padding: var(--space-6);
-  flex: 1;
-  overflow: hidden;
-}
-
-.lab-panel-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-md);
-  padding: var(--space-5);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  box-shadow: var(--shadow-subtle);
-}
-
-.json-output-scroll {
-  flex: 1;
-  overflow: auto;
-  background: #1c1b18;
-  border-radius: var(--radius-sm);
-  padding: var(--space-4);
-}
-
-.json-code-block {
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  color: #e6e3da;
-  margin: 0;
-  white-space: pre-wrap;
-  word-break: break-all;
-}
-
-@media (max-width: 1000px) {
   .lab-metrics-grid {
-    grid-template-columns: repeat(2, 1fr);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-4);
+    padding: var(--space-6);
+    background: var(--bg-canvas);
+    border-bottom: 1px solid var(--border-light);
+    flex-shrink: 0;
   }
 
   .lab-body-grid {
-    grid-template-columns: 1fr;
-    overflow-y: auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-6);
+    padding: var(--space-6);
+    flex: 1;
+    overflow: hidden;
   }
+
+  .lab-panel-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: var(--space-5);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: var(--shadow-subtle);
+  }
+
+  .json-output-scroll {
+    flex: 1;
+    overflow: auto;
+    background: #1c1b18;
+    border-radius: var(--radius-sm);
+    padding: var(--space-4);
+  }
+
+  .json-code-block {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: #e6e3da;
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  @media (max-width: 1000px) {
+    .lab-metrics-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .lab-body-grid {
+      grid-template-columns: 1fr;
+      overflow-y: auto;
+    }
+  }
+
 }
