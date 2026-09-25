@@ -14,7 +14,7 @@
   --bg-surface: #ffffff;
   --bg-surface-subtle: #f1efe9;
   --bg-surface-elevated: #faf9f6;
-  
+
   --text-primary: #1c1b18;
   --text-secondary: #57544d;
   --text-muted: #8c877c;
@@ -55,13 +55,16 @@
 }
 
 /* Base Resets & Global Box Sizing */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-html, body {
+html,
+body {
   height: 100%;
   background-color: var(--bg-canvas);
   color: var(--text-primary);
@@ -269,6 +272,7 @@ html, body {
 .menu-panel::-webkit-scrollbar {
   width: 5px;
 }
+
 .menu-panel::-webkit-scrollbar-thumb {
   background-color: var(--border-medium);
   border-radius: var(--radius-sm);
@@ -1132,19 +1136,40 @@ html, body {
 
 /* Keyframe Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
 }
 
 
 @keyframes slideInRight {
-  from { opacity: 0; transform: translateX(20px); }
-  to { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 /* ==========================================================================
@@ -1786,6 +1811,8 @@ html, body {
   .comparison-metrics-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+}
+
 /* ==========================================================================
    Step 9: Experiment Lab & Research Suite — Styles
    ========================================================================== */
@@ -1907,7 +1934,3 @@ html, body {
     overflow-y: auto;
   }
 }
-
-
-
-
